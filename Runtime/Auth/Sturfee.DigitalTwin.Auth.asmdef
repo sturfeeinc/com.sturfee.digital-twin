@@ -1,0 +1,19 @@
+{
+    "name": "Sturfee.DigitalTwin.Auth",
+    "rootNamespace": "",
+    "references": [
+        "GUID:3c92269389b449f41a89c80de0b0b31b",
+        "GUID:f50b621c179b609419b395845029c660",
+        "GUID:34326c4360e2d4760b399f1589bcd4dc",
+        "GUID:f3342bdf77841184fa43ed46b62683ee"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

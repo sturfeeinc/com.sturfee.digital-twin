@@ -1,0 +1,14 @@
+{
+    "name": "Sturfee.DigitalTwin.Config",
+    "rootNamespace": "Sturfee.DigitalTwin.Config",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

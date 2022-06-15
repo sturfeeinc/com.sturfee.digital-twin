@@ -1,0 +1,23 @@
+{
+  "name": "com.sturfee.sturfee.digital-twin",
+  "version": "1.0.0",
+  "displayName": "Sturfee Digital Twin",
+  "unity": "2020.3",
+  "unityRelease": "27f1",
+  "keywords": [
+    "sturfee",
+    "vps",
+    "localization",
+    "ar"
+  ],
+  "author": {
+    "name": "Sturfee Inc",
+    "email": "contact@sturfee.com",
+    "url": "https://sturfee.com"
+  },
+  "type": "library",
+  "description": "Digital Twin Spaces SDK to load and create Digital twin tiles",
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.0.2"
+  }
+}
