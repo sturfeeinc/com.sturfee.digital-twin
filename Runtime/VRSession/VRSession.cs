@@ -4,6 +4,7 @@ using Sturfee.XRCS;
 using Sturfee.XRCS.Config;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -44,12 +45,11 @@ public class VRSession : SceneSingleton<VRSession>
 
     public float LoadProgress { get; private set; }
 
-    private float _tileLoadProgress = 1;
-    private float _dtEnhancementLoadProgress = 1;
-    private float _xrAssetsLoadProgress = 1;
-    private float _xrSceneLoadProgress = 1;
+    private float _tileLoadProgress = 0;
+    private float _dtEnhancementLoadProgress = 0;
+    private float _xrAssetsLoadProgress = 0;
+    private float _xrSceneLoadProgress = 0;
 
-    private int _dtTilesFailedCount = 0;
     private bool _dtTilesLoaded = false;
 
     TaskCompletionSource<bool> AreTilesLoading = new TaskCompletionSource<bool>();
@@ -70,38 +70,7 @@ public class VRSession : SceneSingleton<VRSession>
             MyLogger.Log(" Creating VR session");
             _status = VRSessionStatus.Initializing;
 
-            List<Task> loadTasks = new List<Task>();
-
-            // Digital Twin
-            _tileLoadProgress = 0;
-            loadTasks.Add(DitTileLoader.Instance.LoadTilesAt(
-                space.Location.Latitude, 
-                space.Location.Longitude,
-                OnDtTileLoadProgress,
-                OnDtTileLoadError
-            ));
-
-            // Enhancements
-            if (Options.Enhancements)
-            {
-                _dtEnhancementLoadProgress = 0;
-                //loadTasks.Add(EnhancementsLoader.CurrentInstance.LoadEnhancements(space));
-            }
-
-            // CMS            
-            if (Options.CMS)
-            {
-                _xrAssetsLoadProgress = 0;
-                _xrSceneLoadProgress = 0;
-
-                loadTasks.Add(CMSLoader.Instance.LoadAssets(
-                    space, 
-                    OnXrAssetLoadProgress, 
-                    OnXrSceneLoadProgress, 
-                    OnXrSceneLoadError
-                ));
-            }
-
+            List<Task> loadTasks = new List<Task>() { LoadTiles(space), LoadCMS(space), LoadEnhancements(space) };
             await Task.WhenAll(loadTasks);
 
         }
@@ -138,90 +107,92 @@ public class VRSession : SceneSingleton<VRSession>
         _status = VRSessionStatus.Ready;
     }
 
-    private void OnDtTileLoadProgress(float progress, int errorCount)
+    private async Task LoadTiles(XrSceneData space)
     {
-        _tileLoadProgress = progress;
-
-        if (progress >= 1 && !_dtTilesLoaded)
-        {
-            MyLogger.Log($"VRSession :: DT Tiles Loaded!!! erros = {errorCount}");
-            _dtTilesLoaded = true;
-            AreTilesLoading.SetResult(_dtTilesLoaded);
-        }
-
-        UpdateProgress();
-    }
-
-    private void OnXrAssetLoadProgress(float progress, int errorCount)
-    {
-        _xrAssetsLoadProgress = progress;
-        if (progress == 1)
-        {
-            MyLogger.Log($"VRSession :: XR Assets Loaded!!! erros = {errorCount}");
-        }
-
-        UpdateProgress();
-    }
-
-    private void OnXrSceneLoadProgress(float progress, int errorCount)
-    {
-        _xrSceneLoadProgress = progress;
-        if (progress == 1)
-        {
-            MyLogger.Log($"VRSession :: XR Scene Loaded!!! erros = {errorCount}");
-            AreAssetsLoading.SetResult(true);
-        }
-
-        UpdateProgress();
-    }
-
-    private void OnDtTileLoadError(DtTileErrorCode code, string errorMessage)
-    {
-        _dtTilesFailedCount++;
-
-        if (_dtTilesFailedCount == 9)
-        {
-            if (code == DtTileErrorCode.NotFound)
+        int _dtTilesFailedCount = 0;
+        Stopwatch tileWatch = Stopwatch.StartNew();
+        await DtTileLoader.Instance.LoadTilesAt(
+            space.Location.Latitude,
+            space.Location.Longitude,
+            (progress, errorCount) =>
             {
-                // load the SturG instead
-                MyLogger.LogError($"VRSSession :: Error finding some DT Tiles...");
-            }
-            else
+                _tileLoadProgress = progress;
+
+                if (progress >= 1 && !_dtTilesLoaded)
+                {
+                    MyLogger.Log($"VRSession :: DT Tiles Loaded!!! erros = {errorCount}");
+                    _dtTilesLoaded = true;
+                    MyLogger.Log($" Timer :: VRSession ::  Tile load time : {tileWatch.ElapsedMilliseconds} ms");
+                    tileWatch.Stop();
+                    AreTilesLoading.SetResult(_dtTilesLoaded);
+                }
+
+                UpdateProgress();
+            },
+            (code, error ) =>
             {
-                MyLogger.LogError($"VRSSession :: Error loading some DT Tiles... {errorMessage}");
+                _dtTilesFailedCount++;
+
+                if (_dtTilesFailedCount == 9)
+                {
+                    if (code == DtTileErrorCode.NotFound)
+                    {
+                        // load the SturG instead
+                        MyLogger.LogError($"VRSSession :: Error finding some DT Tiles...");
+                    }
+                    else
+                    {
+                        MyLogger.LogError($"VRSSession :: Error loading some DT Tiles... {error}");
+                    }
+
+                    _status = VRSessionStatus.NotReady;
+                }
             }
-
-            _status = VRSessionStatus.NotReady;
-
-            //MobileToastManager.Instance.ShowToast("Error Loading Space data. Please try again.", -1, true, "Ok");
-
-            //if (MobileEditorManager.CurrentInstance == null)
-            //{
-            //    NetworkManager.singleton.StopClient();
-            //}
-            //else
-            //{
-            //    SceneManager.LoadScene("Dashboard");
-            //}
-        }
+        );
     }
 
-    private void OnXrSceneLoadError(string message)
+    private async Task LoadCMS(XrSceneData space)
     {
-        _status = VRSessionStatus.NotReady;
+        Stopwatch cmsWatch = Stopwatch.StartNew();
 
-        //MobileToastManager.Instance.ShowToast(message, -1, true);
+        await CMSLoader.Instance.LoadAssets(
+            space,
+            (assetProgreee, errorCount) =>
+            {
+                _xrAssetsLoadProgress = assetProgreee;
+                if (assetProgreee >= 1)
+                {
+                    MyLogger.Log($"VRSession :: XR Assets Loaded!!! erros = {errorCount}");
+                }
 
-        //var editor = FindObjectOfType<MobileEditorManager>();
-        //if (editor != null)
-        //{
-        //    SceneManager.LoadScene("Dashboard");
-        //}
-        //else
-        //{
-        //    NetworkManager.singleton.StopClient();
-        //}
+                UpdateProgress();
+            },
+            (sceneProgress, errorCount) =>
+            {
+                _xrSceneLoadProgress = sceneProgress;
+                if (sceneProgress == 1)
+                {
+                    MyLogger.Log($"VRSession :: XR Scene Loaded!!! erros = {errorCount}");
+                    MyLogger.Log($" Timer :: VRSession ::  CMS load time : {cmsWatch.ElapsedMilliseconds} ms");
+                    cmsWatch.Stop();
+                    AreAssetsLoading.SetResult(true);
+                }
+
+                UpdateProgress();
+            },
+            (error) =>
+            {
+                _status = VRSessionStatus.NotReady;
+            }
+        );
     }
+
+    private async Task LoadEnhancements(XrSceneData space)
+    {
+        await Task.Yield();
+        _dtEnhancementLoadProgress = 1;
+    }
+
 
     private void UpdateProgress()
     {

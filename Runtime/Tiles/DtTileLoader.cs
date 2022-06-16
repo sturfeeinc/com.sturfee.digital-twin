@@ -7,6 +7,7 @@ using SturfeeVPS.Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -142,8 +143,11 @@ namespace Sturfee.DigitalTwin.Tiles
                 return filePaths;
             }
 
-            var tileProvider = IOC.Resolve<ITileProvider>();           
+            var tileProvider = IOC.Resolve<ITileProvider>();
+            DebugWatch fetchWatch = DebugWatch.StartNew();
             var tileItems = await tileProvider.FetchTileUrls(nonCachedGeoHashes);
+            MyLogger.Log($" Timer :: DtTileLoader :: Fetch tiles time : {fetchWatch.ElapsedMilliseconds} ms");
+
             MyLogger.Log($"DtTileLoader :: Downloading ({tileItems.Count}) tiles ...\n{JsonConvert.SerializeObject(tileItems)}");
 
             var tileCount = tileItems.Select(x => x.Files.Count).Sum();
@@ -181,10 +185,11 @@ namespace Sturfee.DigitalTwin.Tiles
                 }
             }
             MyLogger.Log($"DtTileLoader :: Waiting for tiles to finish download...");
-
+            DebugWatch downloadWatch = DebugWatch.StartNew();
             try
             {
-                await WhenAllTasks(downloadTasks, filePaths, progress);                
+                await DownloadAllTasks(downloadTasks, filePaths, progress);
+                MyLogger.Log($" Timer :: DtTileLoader :: Download tiles time : {downloadWatch.ElapsedMilliseconds} ms");
             }
             catch (Exception e)
             {
@@ -451,7 +456,7 @@ namespace Sturfee.DigitalTwin.Tiles
             return cacheInfo;
         }
 
-        private async Task WhenAllTasks(List<Task<string>> downloadTasks, List<string> filePaths, DtTileLoadEvent progress = null)
+        private async Task DownloadAllTasks(List<Task<string>> downloadTasks, List<string> filePaths, DtTileLoadEvent progress = null)
         {
             var tasks = Task.WhenAll(downloadTasks);
             var startTime = DateTime.Now;
@@ -474,11 +479,9 @@ namespace Sturfee.DigitalTwin.Tiles
                     }
                     else
                     {
-                        MyLogger.Log($"DtTileLoader :: Download progress : {(float)tasks.Status}");
-
                         var currentTime = DateTime.Now;
                         double currentProgress = (currentTime - startTime).TotalSeconds / downloadTargetTime;
-                        Debug.Log($" Timed Download progress : {currentProgress}");
+                        MyLogger.Log($"Download progress : {currentProgress}");
                         progress?.Invoke((float)currentProgress, 0); 
                     }
                 }
