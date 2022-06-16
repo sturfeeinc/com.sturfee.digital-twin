@@ -19,7 +19,7 @@ namespace Sturfee.DigitalTwin
             // 1st raycast to get terrain elevation
             pos.y += 1000;       // TODO: what if terrain is higher than 1000m ?
             ray = new Ray(pos, Vector3.down);
-            //Debug.DrawRay(ray.origin, ray.direction, Color.yellow, 1.0f);
+            Debug.DrawRay(ray.origin, ray.direction, Color.yellow, 1.0f);
             if (Physics.Raycast(ray, out hit, 1000, LayerMask.GetMask(SturfeeLayers.Terrain, $"{XrLayers.Terrain}")))
             {
                 elevation = hit.point.y;
@@ -27,7 +27,7 @@ namespace Sturfee.DigitalTwin
 
             // 2nd raycast to start slightly above terrain 
             pos.y = elevation + 10;
-            //ray = new Ray(pos, Vector3.down);
+            ray = new Ray(pos, Vector3.down);
             Debug.DrawRay(ray.origin, ray.direction, Color.green, 1.0f);
             if (Physics.Raycast(ray, out hit))
             {

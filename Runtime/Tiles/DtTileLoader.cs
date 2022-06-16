@@ -47,7 +47,7 @@ namespace Sturfee.DigitalTwin.Tiles
         public List<String> NonCachedGeohashes;
     }
 
-    public class DigitalTwinTileLoader : SimpleSingleton<DigitalTwinTileLoader>
+    public class DtTileLoader : SimpleSingleton<DtTileLoader>
     {
         public List<string> unsmoothList = new List<string> {
             $"{FeatureLayer.Concrete}",
@@ -142,13 +142,7 @@ namespace Sturfee.DigitalTwin.Tiles
                 return filePaths;
             }
 
-            var tileProvider = IOC.Resolve<ITileProvider>();
-            if (tileProvider == null)
-            {
-                MyLogger.LogError(" DtTileLoader :: TileProvider not resolved. Add it to services initialization");
-                onError?.Invoke(DtTileErrorCode.Other, "TileProvider not resolved");
-            }
-
+            var tileProvider = IOC.Resolve<ITileProvider>();           
             var tileItems = await tileProvider.FetchTileUrls(nonCachedGeoHashes);
             MyLogger.Log($"DtTileLoader :: Downloading ({tileItems.Count}) tiles ...\n{JsonConvert.SerializeObject(tileItems)}");
 
@@ -177,6 +171,7 @@ namespace Sturfee.DigitalTwin.Tiles
             ServicePointManager.DefaultConnectionLimit = 10000;
 
             var downloadTasks = new List<Task<string>>();
+
             foreach (var tileItem in tileItems)
             {
                 foreach (var url in tileItem.Files)
@@ -189,7 +184,7 @@ namespace Sturfee.DigitalTwin.Tiles
 
             try
             {
-                await DownloadTasksAsync(downloadTasks, filePaths, progress);                
+                await WhenAllTasks(downloadTasks, filePaths, progress);                
             }
             catch (Exception e)
             {
@@ -456,7 +451,7 @@ namespace Sturfee.DigitalTwin.Tiles
             return cacheInfo;
         }
 
-        private async Task DownloadTasksAsync(List<Task<string>> downloadTasks, List<string> filePaths, DtTileLoadEvent progress = null)
+        private async Task WhenAllTasks(List<Task<string>> downloadTasks, List<string> filePaths, DtTileLoadEvent progress = null)
         {
             var tasks = Task.WhenAll(downloadTasks);
             var startTime = DateTime.Now;

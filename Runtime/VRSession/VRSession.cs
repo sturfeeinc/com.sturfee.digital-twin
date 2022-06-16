@@ -74,7 +74,7 @@ public class VRSession : SceneSingleton<VRSession>
 
             // Digital Twin
             _tileLoadProgress = 0;
-            loadTasks.Add(DigitalTwinTileLoader.Instance.LoadTilesAt(
+            loadTasks.Add(DitTileLoader.Instance.LoadTilesAt(
                 space.Location.Latitude, 
                 space.Location.Longitude,
                 OnDtTileLoadProgress,
