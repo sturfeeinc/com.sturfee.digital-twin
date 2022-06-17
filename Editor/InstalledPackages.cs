@@ -23,9 +23,8 @@ public static class InstalledPackages
         var packages = listRequest.Result;
         var text = new StringBuilder("Packages:\n");
         foreach (var package in packages)
-        {
-            if (package.source == PackageSource.Registry)
-                text.AppendLine($"{package.name}: {package.version} [{package.resolvedPath}]");
+        {            
+            text.AppendLine($"{package.name}: {package.version} [{package.resolvedPath}]");
         }
 
         Debug.Log(text.ToString());
