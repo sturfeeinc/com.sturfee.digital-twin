@@ -18,6 +18,8 @@
   "type": "library",
   "description": "Digital Twin Spaces SDK to load and create Digital twin tiles",
   "dependencies": {
-    "com.unity.nuget.newtonsoft-json": "3.0.2"
+    "com.unity.nuget.newtonsoft-json": "3.0.2",
+    "com.sturfee.xrcs": "1.0.0",
+    "com.sturfee.vps.sdk": "3.1.0"
   }
 }
