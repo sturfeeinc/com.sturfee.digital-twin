@@ -70,7 +70,9 @@ public class VRSession : SceneSingleton<VRSession>
             MyLogger.Log(" Creating VR session");
             _status = VRSessionStatus.Initializing;
 
-            List<Task> loadTasks = new List<Task>() { LoadTiles(space), LoadCMS(space), LoadEnhancements(space) };
+            List<Task> loadTasks = new List<Task>() { LoadTiles(space) };
+            if(Options.CMS)     loadTasks.Add(LoadCMS(space));
+            if (Options.Enhancements)   loadTasks.Add(LoadEnhancements(space));
             await Task.WhenAll(loadTasks);
 
         }
