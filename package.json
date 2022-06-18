@@ -1,6 +1,6 @@
 {
   "name": "com.sturfee.digital-twin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "displayName": "Sturfee Digital Twin",
   "unity": "2020.3",
   "unityRelease": "27f1",
@@ -20,6 +20,6 @@
   "dependencies": {
     "com.unity.nuget.newtonsoft-json": "3.0.2",
     "com.sturfee.xrcs": "1.0.0",
-    "com.sturfee.vps.sdk": "3.1.0"
+    "com.sturfee.vps.sdk": "3.1.1"
   }
 }
