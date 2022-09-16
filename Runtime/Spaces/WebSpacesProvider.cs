@@ -14,8 +14,31 @@ namespace Sturfee.DigitalTwin.Spaces
 {
     public interface ISpacesProvider
     {
+        /// <summary>
+        /// Find all spaces matching the filter
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <param name="token"></param>
+        /// <param name="page"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
         Task<List<XrSceneData>> FindSpaces(FindSpacesFilter filter, CancellationToken? token, int page = 1, int count = 10);
+        
+        /// <summary>
+        /// Create a space locally. 
+        /// Note : Created will only be saved on server when SaveSpace is called
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="latitude"></param>
+        /// <param name="longitude"></param>
+        /// <returns></returns>
         Task<XrSceneData> CreateSpace(XrcsUserData user, double latitude, double longitude);
+
+        /// <summary>
+        /// Saves/Publish this space. If successful, this space can be found uding FindSpaces
+        /// </summary>
+        /// <param name="space"></param>
+        /// <returns></returns>
         Task SaveSpace(XrSceneData space);
         Task DeleteSpace(XrSceneData space);
     }

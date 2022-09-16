@@ -2,6 +2,7 @@ using Sturfee.DigitalTwin.CMS;
 using Sturfee.DigitalTwin.Tiles;
 using Sturfee.XRCS;
 using Sturfee.XRCS.Config;
+using SturfeeVPS.SDK;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -27,6 +28,7 @@ public enum VRSessionStatus
 [Serializable]
 public class SpaceLoadOptions
 {
+    public bool Tiles = true;
     public bool CMS;
     public bool Enhancements;
 }
@@ -70,9 +72,12 @@ public class VRSession : SceneSingleton<VRSession>
             MyLogger.Log(" Creating VR session");
             _status = VRSessionStatus.Initializing;
 
-            List<Task> loadTasks = new List<Task>() { LoadTiles(space) };
-            if(Options.CMS)     loadTasks.Add(LoadCMS(space));
-            if (Options.Enhancements)   loadTasks.Add(LoadEnhancements(space));
+            List<Task> loadTasks = new List<Task>();
+
+            loadTasks.Add(LoadTiles(space));
+            loadTasks.Add(LoadCMS(space));
+            loadTasks.Add(LoadEnhancements(space));
+
             await Task.WhenAll(loadTasks);
 
         }
@@ -85,20 +90,14 @@ public class VRSession : SceneSingleton<VRSession>
         }
 
         await AreTilesLoading.Task;
-        if(Options.CMS)  await AreAssetsLoading.Task;
-
-        var dtTileParent = GameObject.Find("DigitalTwinTiles");
-        if (dtTileParent != null)
-        {
-            dtTileParent.transform.SetParent(transform.parent);
-        }
+        await AreAssetsLoading.Task;
 
         await Task.Delay(2000);
 
         var spawnPoint = GetSpawnLocation();
         spawnPoint.Position.y = GetElevation() + 15f;
 
-        MyLogger.Log(" VR Camera start position : " + spawnPoint);
+        MyLogger.Log(" VR Camera start position : " + JsonUtility.ToJson(spawnPoint));
 
         VRCamera.CurrentInstance.SetPosition(spawnPoint.Position);
         VRCamera.CurrentInstance.SetRotation(spawnPoint.Rotation);
@@ -111,6 +110,16 @@ public class VRSession : SceneSingleton<VRSession>
 
     private async Task LoadTiles(XrSceneData space)
     {
+        if (!Options.Tiles)
+        {
+            _tileLoadProgress = 1;
+            _dtTilesLoaded = true;
+            AreTilesLoading.SetResult(true);
+            return;
+        }
+
+        MyLogger.Log($" Loading Tiles");
+
         int _dtTilesFailedCount = 0;
         Stopwatch tileWatch = Stopwatch.StartNew();
         await DtTileLoader.Instance.LoadTilesAt(
@@ -126,6 +135,13 @@ public class VRSession : SceneSingleton<VRSession>
                     _dtTilesLoaded = true;
                     MyLogger.Log($" Timer :: VRSession ::  Tile load time : {tileWatch.ElapsedMilliseconds} ms");
                     tileWatch.Stop();
+
+                    var dtTileParent = GameObject.Find("DigitalTwinTiles");
+                    if (dtTileParent != null)
+                    {
+                        dtTileParent.transform.SetParent(transform.parent);
+                    }
+
                     AreTilesLoading.SetResult(_dtTilesLoaded);
                 }
 
@@ -154,15 +170,26 @@ public class VRSession : SceneSingleton<VRSession>
     }
 
     private async Task LoadCMS(XrSceneData space)
-    {
+    {        
+        if (!Options.CMS)
+        {
+            _xrAssetsLoadProgress = 1;
+            _xrSceneLoadProgress = 1;
+
+            AreAssetsLoading.SetResult(true);
+            return;
+        }
+
+        MyLogger.Log($" Loading CMS");
+
         Stopwatch cmsWatch = Stopwatch.StartNew();
 
         await CMSLoader.Instance.LoadAssets(
             space,
-            (assetProgreee, errorCount) =>
+            (assetProgress, errorCount) =>
             {
-                _xrAssetsLoadProgress = assetProgreee;
-                if (assetProgreee >= 1)
+                _xrAssetsLoadProgress = assetProgress;
+                if (assetProgress >= 1)
                 {
                     MyLogger.Log($"VRSession :: XR Assets Loaded!!! erros = {errorCount}");
                 }
@@ -191,6 +218,12 @@ public class VRSession : SceneSingleton<VRSession>
 
     private async Task LoadEnhancements(XrSceneData space)
     {
+        if(!Options.Enhancements)
+        {
+            _dtEnhancementLoadProgress = 1;
+            return;
+        } 
+
         await Task.Yield();
         _dtEnhancementLoadProgress = 1;
     }

@@ -30,39 +30,12 @@ public class VRCamera : SceneSingleton<VRCamera>
             };
         }
     }
-            
 
-    public XRPose FirstPersonCamera
-    {
-        get
-        {
-            if (_firstPersonCamera == null)
-                return null;
 
-            return new XRPose
-            {
-                Position = _firstPersonCamera.transform.position,
-                Rotation = _firstPersonCamera.transform.rotation,
-                GeoLocation = LocManager.Instance.GetObjectLocation(_firstPersonCamera.transform)
-            };
-        }
-    }
-
-    public XRPose ThirdPersonCamera
-    {
-        get
-        {
-            if (_thirdPersonCamera == null)
-                return null;
-
-            return new XRPose
-            {
-                Position = _thirdPersonCamera.transform.position,
-                Rotation = _thirdPersonCamera.transform.rotation,
-                GeoLocation = LocManager.Instance.GetObjectLocation(_thirdPersonCamera.transform)
-            };
-        }
-    }
+    public Camera FirstPersonCamera => _firstPersonCamera;
+    
+    public Camera ThirdPersonCamera => _thirdPersonCamera;
+    
 
     public void Activate()
     {
