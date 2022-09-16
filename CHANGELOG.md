@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.4] - 2022-09-16
+
+### Changes
+
+- Added option to _not_ load Digital Twin Tiles when loading a VRSession
+-  VPS SDK depenedency version updated to 3.2.0
+
 ## [1.0.3] - 2022-07-18
 
 ### Changes
