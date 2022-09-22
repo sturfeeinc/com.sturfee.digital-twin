@@ -1,0 +1,19 @@
+{
+    "name": "Sturfee.DigitalTwin.Auth.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:9d7b7750cea11a64480144ebd384b2f6",
+        "GUID:1a2810f97d211ef40ac4e52ad9eaaa2d"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
