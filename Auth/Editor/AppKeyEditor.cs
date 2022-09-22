@@ -18,19 +18,13 @@ namespace Sturfee.DigitalTwin.Auth.Editor
         [InitializeOnLoadMethod]
         public static void CreateAppKeyScriptableObjects()
         {
-            string dir = AbsolutePath;
-            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
-
             foreach (var platform in Enum.GetValues(typeof(AppKeySupportedPlatforms)).Cast<AppKeySupportedPlatforms>())
             {
-                string file = Path.Combine(dir, $"{platform}.asset");
+                string file = Path.Combine(AbsolutePath, $"{platform}.asset");
                 if (!File.Exists(file))
                 {
                     AppKeyConfig config = CreateApiKeyObject(platform);
-                    Debug.Log($"ScriptableObject {JsonUtility.ToJson(config)} created ");
-
-                    // CreateAsset works only with project relative/local path
-                    AssetDatabase.CreateAsset(config, Path.Combine(LocalPath, $"{platform}.asset"));
+                    Save(config, platform);
                 }
                 else
                 {
@@ -59,14 +53,15 @@ namespace Sturfee.DigitalTwin.Auth.Editor
 
         private static void ShowAppKeyConfig(AppKeySupportedPlatforms platform)
         {
-            var appKeyConfig = Resources.Load<AppKeyConfig>($"Sturfee/Auth/AppKeys/{platform}");
             EditorUtility.FocusProjectWindow();
 
             UnityEngine.Object obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(Path.Combine(LocalPath, $"{platform}.asset"));
 
             if(obj == null)
             {
-                CreateApiKeyObject(platform);
+                var config = CreateApiKeyObject(platform);
+                Save(config, platform);
+                
                 obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(Path.Combine(LocalPath, $"{platform}.asset"));
             }
 
@@ -91,12 +86,22 @@ namespace Sturfee.DigitalTwin.Auth.Editor
             config.ApiKey = $"*****Your {platform} Api Key here****";
             config.SourceId = Application.identifier;
 
-            Debug.Log($"ScriptableObject {JsonUtility.ToJson(config)} created ");
+            Debug.Log($"Appkeyconfig {JsonUtility.ToJson(config)} created ");
+
+            return config;
+        }
+
+        private static void Save(AppKeyConfig config, AppKeySupportedPlatforms platform)
+        {
+
+            string dir = AbsolutePath;
+            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
             // CreateAsset works only with project relative/local path
             AssetDatabase.CreateAsset(config, Path.Combine(LocalPath, $"{platform}.asset"));
 
-            return config;
+            Debug.Log($"Appkeyconfig {JsonUtility.ToJson(config)} saved ");
+
         }
     }
 }
