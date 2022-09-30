@@ -25,8 +25,8 @@ namespace Sturfee.DigitalTwin
                 elevation = hit.point.y;
             }
 
-            // 2nd raycast to start slightly above terrain 
-            pos.y = elevation + 10;
+            // 2nd raycast to start slightly above terrain ( similar to step offset of character controller)
+            pos.y = elevation + 1.499f ;     // TODO: Should be made configurable from inspector
             ray = new Ray(pos, Vector3.down);
             Debug.DrawRay(ray.origin, ray.direction, Color.green, 1.0f);
             if (Physics.Raycast(ray, out hit))
