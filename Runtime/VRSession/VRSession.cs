@@ -45,6 +45,8 @@ public class VRSession : SceneSingleton<VRSession>
 
     public SpaceLoadOptions Options;
 
+    public float SpawnHeightAboveGround = 15;
+
     public float LoadProgress { get; private set; }
 
     private float _tileLoadProgress = 0;
@@ -95,7 +97,7 @@ public class VRSession : SceneSingleton<VRSession>
         await Task.Delay(2000);
 
         var spawnPoint = GetSpawnLocation();
-        spawnPoint.Position.y = GetElevation() + 15f;
+        spawnPoint.Position.y = GetElevation() + SpawnHeightAboveGround;
 
         MyLogger.Log(" VR Camera start position : " + JsonUtility.ToJson(spawnPoint));
 
