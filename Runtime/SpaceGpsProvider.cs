@@ -23,10 +23,10 @@ public class SpaceGpsProvider : GpsProviderBase
         get 
         {
             // wait till base gps is ready before using space's location
-            if(BaseGps.GetProviderStatus() != ProviderStatus.Ready)
-            {
-                return null;
-            }
+            //if(BaseGps.GetProviderStatus() != ProviderStatus.Ready)
+            //{
+            //    return null;
+            //}
 
             // Use space's location only to load tiles
             // After tiles are loaded use the regular gps 
