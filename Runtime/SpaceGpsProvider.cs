@@ -1,21 +1,21 @@
 using SturfeeVPS.Core;
-using SturfeeVPS.Providers;
+using SturfeeVPS.SDK;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SpaceGpsProvider : GpsProviderBase
+public class SpaceGpsProvider : BaseGpsProvider
 {
     [SerializeField]
     private GeoLocation _spaceLocation;
 
     private bool _tilesLoaded = false;
 
-    public GpsProviderBase BaseGps;
+    public BaseGpsProvider BaseGps;
 
     private void Start()
     {
-        BaseGps = GetComponent<GpsProviderBase>();
+        BaseGps = GetComponent<BaseGpsProvider>();
     }
 
     private GeoLocation SpaceLocation
@@ -39,10 +39,10 @@ public class SpaceGpsProvider : GpsProviderBase
         }
     }
 
-    public override void Initialize()
+    public override void OnRegister()
     {
-        BaseGps.Initialize();        
-        SturfeeEventManager.Instance.OnTilesLoaded += OnTilesLoaded;
+        BaseGps.OnRegister();        
+        SturfeeEventManager.OnTilesLoaded += OnTilesLoaded;
     }
 
     private void OnTilesLoaded()
@@ -50,13 +50,14 @@ public class SpaceGpsProvider : GpsProviderBase
         _tilesLoaded = true;
     }
 
-    public override GeoLocation GetCurrentLocation()
+    public override GeoLocation GetFineLocation(out bool includesElevation)
     {
         if (SpaceLocation == null)
         {
-            return BaseGps.GetCurrentLocation();
+            return BaseGps.GetFineLocation(out includesElevation);
         }
 
+        includesElevation = false;
         return SpaceLocation;
     }
 
@@ -70,15 +71,20 @@ public class SpaceGpsProvider : GpsProviderBase
         return ProviderStatus.Ready;        
     }
 
-    public override void Destroy()
+    public override void OnUnregister()
     {
-        BaseGps.Destroy();
+        BaseGps.OnUnregister();
         
-        SturfeeEventManager.Instance.OnTilesLoaded -= OnTilesLoaded;
+        SturfeeEventManager.OnTilesLoaded -= OnTilesLoaded;
     }
 
     public void SetSpaceLocation(GeoLocation spaceLocation)
     {
         _spaceLocation = spaceLocation;
+    }
+
+    public override GeoLocation GetApproximateLocation(out bool includesElevation)
+    {
+       return BaseGps.GetApproximateLocation(out includesElevation);
     }
 }

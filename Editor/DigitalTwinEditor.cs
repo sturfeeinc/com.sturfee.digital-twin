@@ -6,7 +6,7 @@ namespace Sturfee.XRCS.Editor
 {
     public class DigitalTwinEditor
     {
-        [MenuItem("DigitalTwin/Set Layers")]
+        [MenuItem("Sturfee/DigitalTwin/Set Layers")]
 
         public static void CreateDigitalTwinLayers()
         {

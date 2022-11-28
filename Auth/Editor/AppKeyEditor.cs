@@ -33,19 +33,19 @@ namespace Sturfee.DigitalTwin.Auth.Editor
             }
         }
 
-        [MenuItem("DigitalTwin/Auth/AppKeys/Android")]
+        [MenuItem("Sturfee/DigitalTwin/Auth/AppKeys/Android")]
         public static void ShowAppKeyConfig_Android()
         {
             ShowAppKeyConfig(AppKeySupportedPlatforms.Android);
         }
 
-        [MenuItem("DigitalTwin/Auth/AppKeys/IOS")]
+        [MenuItem("Sturfee/DigitalTwin/Auth/AppKeys/IOS")]
         public static void ShowAppKeyConfig_IOS()
         {
             ShowAppKeyConfig(AppKeySupportedPlatforms.IOS);
         }
 
-        [MenuItem("DigitalTwin/Auth/AppKeys/Desktop")]
+        [MenuItem("Sturfee/DigitalTwin/Auth/AppKeys/Desktop")]
         public static void ShowAppKeyConfig_Desktop()
         {
             ShowAppKeyConfig(AppKeySupportedPlatforms.Desktop);

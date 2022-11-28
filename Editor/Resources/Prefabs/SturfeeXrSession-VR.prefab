@@ -1,0 +1,75 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &200848721744270923
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 200848721744271030}
+  - component: {fileID: 200848721744271029}
+  - component: {fileID: -1825157474142915408}
+  m_Layer: 0
+  m_Name: SturfeeXrSession-VR
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &200848721744271030
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 200848721744270923}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &200848721744271029
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 200848721744270923}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bb84cf20e2e4694c8cbfdc8c46539a6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Location:
+    Latitude: 0
+    Longitude: 0
+    Altitude: 0
+  CreateOnStart: 1
+  StartSet: 0
+  ProviderSets:
+  - Name: Mobile - VR
+    DisplayName: VR
+    Providers:
+      GpsProvider: {fileID: 0}
+      PoseProvider: {fileID: 4366767636009679889, guid: b630eaa2274e52046ae1ce00f2623a72, type: 3}
+      VideoProvider: {fileID: 3461086581105863655, guid: 361aab66ab920d644adea3c5cebe0101, type: 3}
+      TilesProvider: {fileID: 5512128429405420343, guid: 5bdc5668830aac443b0ba6539efc3d8d, type: 3}
+      LocalizationProvider: {fileID: 0}
+  _currentSet: 0
+--- !u!114 &-1825157474142915408
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 200848721744270923}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ed4a755bddc1874d9152de0f020f03e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

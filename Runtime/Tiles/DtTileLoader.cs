@@ -211,13 +211,14 @@ namespace Sturfee.DigitalTwin.Tiles
         /// <param name="progress"></param>
         /// <param name="onError"></param>
         /// <returns></returns>
-        public async Task LoadTilesAt(double latitude, double longitude, DtTileLoadEvent progress = null, DtTileLoadError onError = null)
+        public async Task<GameObject> LoadTilesAt(double latitude, double longitude, DtTileLoadEvent progress = null, DtTileLoadError onError = null)
         {
             MyLogger.Log($"DigitalTwinTileLoader :: Trying to load DT Tiles for loc={latitude},{longitude}");
 
             var tileGeohash = GeoHash.Encode(latitude, longitude, _geohashLength);
             await LoadTilesAt(tileGeohash, progress, onError);
 
+            return _parent;
             //await Task.Delay(2000);
         }
 
@@ -228,7 +229,7 @@ namespace Sturfee.DigitalTwin.Tiles
         /// <param name="progress"></param>
         /// <param name="onError"></param>
         /// <returns></returns>
-        public async Task LoadTilesAt(string tileGeohash, DtTileLoadEvent progress = null, DtTileLoadError onError = null)
+        public async Task<GameObject> LoadTilesAt(string tileGeohash, DtTileLoadEvent progress = null, DtTileLoadError onError = null)
         {            
             var location = GeoHash.Decode(tileGeohash);
 
@@ -304,6 +305,7 @@ namespace Sturfee.DigitalTwin.Tiles
             progress?.Invoke(1,errorCount);
 
             MyLogger.Log($"DtTileLoader :: DONE! Loaded (3x3) DT Tiles for loc={location.Coordinates.Lat},{location.Coordinates.Lon}");
+            return _parent;
         }
 
         private async Task ImportTileLayer(string filePath, Action<GameObject, ExceptionDispatchInfo> onComplete = null)

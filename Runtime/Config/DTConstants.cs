@@ -11,5 +11,9 @@ namespace Sturfee.DigitalTwin
 
         public static readonly string SPACES_API = "https://sharedspaces-api.sturfee.com/api/v2.0";
         public static readonly string DTE_API = "https://sharedspaces-api.sturfee.com/api/v2.0";
+
+        public static readonly string SturfeeXrSessionVR = "SturfeeXrSession-VR";
+        public static readonly string SturfeeXrSessionARVR = "SturfeeXrSession-AR+VR";
+
     }
 }
