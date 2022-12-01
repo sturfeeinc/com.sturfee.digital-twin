@@ -27,6 +27,11 @@
       "displayName": "Samples",
       "description": "Example scenes",
       "path": "Samples~/Sample"
+    },
+    {
+      "displayName": "Demo",
+      "description": "Demo project",
+      "path": "Demo~/Demo"
     }
   ]
 }
