@@ -1,0 +1,37 @@
+{
+  "name": "com.sturfee.digital-twin",
+  "version": "4.0.0",
+  "displayName": "Sturfee Digital Twin",
+  "unity": "2021.3",
+  "unityRelease": "9f1",
+  "keywords": [
+    "sturfee",
+    "vps",
+    "localization",
+    "ar"
+  ],
+  "author": {
+    "name": "Sturfee Inc",
+    "email": "contact@sturfee.com",
+    "url": "https://sturfee.com"
+  },
+  "type": "library",
+  "description": "Digital Twin Spaces SDK to load and create Digital twin tiles",
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.0.2",
+    "com.sturfee.xrcs": "1.0.2",
+    "com.sturfee.vps.sdk": "4.0.0"
+  },
+  "samples": [
+    {
+      "displayName": "Samples",
+      "description": "Example scenes",
+      "path": "Samples~/Sample"
+    },
+    {
+      "displayName": "Demo",
+      "description": "Demo project",
+      "path": "Demo~/Demo"
+    }
+  ]
+}
