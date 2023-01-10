@@ -48,7 +48,7 @@ namespace Sturfee.DigitalTwin.Tiles
             RaycastHit hit;
 
             Vector3 unityPos = Converters.GeoToUnityPosition(location);
-            unityPos.y += 100;
+            unityPos.y += 15000;
 
             Ray ray = new Ray(unityPos, Vector3.down);
             Debug.DrawRay(ray.origin, ray.direction * 10000, Color.red, 2000);
