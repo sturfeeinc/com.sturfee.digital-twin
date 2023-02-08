@@ -10,10 +10,10 @@ namespace Sturfee.DigitalTwin
             return GeoHash.Encode(latitude, longitude, length);
         }
 
-        public static GeoLocation DecodeFromGeohash()
+        public static GeoLocation DecodeFromGeohash(string geohash)
         {
             
-            var location = GeoHash.Decode(geoHash);
+            var location = GeoHash.Decode(geohash);
             return new GeoLocation
             {
                 Latitude = location.Coordinates.Lat,
