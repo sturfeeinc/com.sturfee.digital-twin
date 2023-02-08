@@ -145,44 +145,17 @@ namespace Sturfee.DigitalTwin.Tiles
             }
 
             var tileProvider = IOC.Resolve<ITileProvider>();
-            DebugWatch fetchWatch = DebugWatch.StartNew();
-            var tileItems = await tileProvider.FetchTileUrls(nonCachedGeoHashes);
-            MyLogger.Log($" Timer :: DtTileLoader :: Fetch tiles time : {fetchWatch.ElapsedMilliseconds} ms");
-
-            MyLogger.Log($"DtTileLoader :: Downloading ({tileItems.Count}) tiles ...\n{JsonConvert.SerializeObject(tileItems)}");
-
-            var tileCount = tileItems.Select(x => x.Files.Count).Sum();
-
-            if (tileCount == 0)
-            {
-                if(cacheInfo.CachedTilesPath.Count > 0)     // Some tiles were cached earlier
-                {
-                    MyLogger.LogError($"DtTileLoader :: Some tile-layers NOT FOUND for hash {geoHash} OR loc={latitude},{longitude} during download....creating placeholders");
-
-                    foreach (var nonCachedHash in cacheInfo.NonCachedGeohashes)
-                    {
-                        var tileFolder = Path.Combine(IOC.Resolve<ICacheProvider<CachedDtTile>>().CacheDir, $"{nonCachedHash}");
-                        if (!Directory.Exists(tileFolder)) 
-                        {
-                            Directory.CreateDirectory(tileFolder); 
-                        }
-                    }
-                }
-
-                onError?.Invoke(DtTileErrorCode.NotFound, "NOT FOUND");
-                return filePaths;
-            }
 
             ServicePointManager.DefaultConnectionLimit = 10000;
 
             var downloadTasks = new List<Task<string>>();
 
-            foreach (var tileItem in tileItems)
+            foreach (var _geohash in cacheInfo.NonCachedGeohashes)
             {
-                foreach (var url in tileItem.Files)
+                var item = await tileProvider.FetchTileUrl(_geohash);
+                if (item != null)
                 {
-                    string tileLayer = new Uri(url).Segments.Last();
-                    downloadTasks.Add(tileProvider.DownloadTileLayer(tileItem.Geohash, tileLayer, url));
+                    downloadTasks.Add(tileProvider.DownloadTileLayers(_geohash, item.fileUrl));
                 }
             }
             MyLogger.Log($"DtTileLoader :: Waiting for tiles to finish download...");
@@ -230,7 +203,7 @@ namespace Sturfee.DigitalTwin.Tiles
         /// <param name="onError"></param>
         /// <returns></returns>
         public async Task<GameObject> LoadTilesAt(string tileGeohash, DtTileLoadEvent progress = null, DtTileLoadError onError = null)
-        {            
+        {         
             var location = GeoHash.Decode(tileGeohash);
 
             _parent = new GameObject("DigitalTwinTiles"); 
@@ -439,7 +412,7 @@ namespace Sturfee.DigitalTwin.Tiles
                     var cachedTile = dtTileCache.GetFromCache(Path.Combine(geohash, $"{layer}"));
                     if (cachedTile != null)
                     {
-                        cachedTiles.Add(cachedTile.Path);                     
+                        cachedTiles.Add(cachedTile.Path);
                     }
                 }
 
