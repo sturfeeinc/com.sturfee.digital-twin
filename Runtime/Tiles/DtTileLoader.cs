@@ -72,6 +72,8 @@ namespace Sturfee.DigitalTwin.Tiles
             $"{FeatureLayer.Terrain}"
         };
 
+        public bool GenerateMipMapsForTextures = true;
+
         private GameObject _parent;
 
         private int _geohashLength = 7;
@@ -148,11 +150,11 @@ namespace Sturfee.DigitalTwin.Tiles
         /// <returns></returns>
         public async Task<List<string>> DownloadTilesAt(double latitude, double longitude, double radius, DtTileLoadEvent progress = null, DtTileLoadError onError = null)
         {
-            MyLogger.Log($"DtTileLoader :: Downloading tiles at {latitude}, {longitude}");
+            MyLogger.Log($"DtTileLoader :: Downloading tiles at {latitude}, {longitude}, radius={radius}");
 
             var filePaths = new List<string>();
             var geoHash = GeoHash.Encode(latitude, longitude, _geohashLength);
-            var cacheInfo = GetCacheInfo(latitude, longitude);
+            var cacheInfo = GetCacheInfo(latitude, longitude, radius);
 
             var nonCachedGeoHashes = cacheInfo.NonCachedGeohashes;
             if (!nonCachedGeoHashes.Any())
@@ -283,7 +285,7 @@ namespace Sturfee.DigitalTwin.Tiles
                 }
             }
 
-            MyLogger.Log($"DtTileLoader :: DONE! Loaded ({totalCount}) DT Tiles for hash {tileGeohash} OR loc={location.Coordinates.Lat},{location.Coordinates.Lon}\nERROR COUNT = {errorCount}");
+            MyLogger.Log($"DtTileLoader :: DONE! Loaded ({currentCount}) DT Tiles for hash {tileGeohash} OR loc={location.Coordinates.Lat},{location.Coordinates.Lon}\nERROR COUNT = {errorCount}");
 
             // Arrange tiles in scene
             foreach (var loadedTile in _loadedTiles)
@@ -312,7 +314,49 @@ namespace Sturfee.DigitalTwin.Tiles
 
             try
             {
+                if (!File.Exists(filePath))
+                {
+                    MyLogger.LogError($"{filePath} DOES NOT EXIST!");
+                    return;
+                }
+
                 var _importer = new GLTFSceneImporter(filePath, _importOptions);
+
+                // optimization techniques
+                _importer.GenerateMipMapsForTextures = GenerateMipMapsForTextures;
+                //_importer.KeepCPUCopyOfTexture = false;
+
+                if (Application.platform == RuntimePlatform.IPhonePlayer)
+                {
+                    if (SystemInfo.SupportsTextureFormat(TextureFormat.ETC2_RGBA8Crunched))
+                    {
+                        _importer.DefaultTextureFormat = TextureFormat.ETC2_RGBA8Crunched;
+                    }
+                    if (SystemInfo.SupportsTextureFormat(TextureFormat.ASTC_4x4))
+                    {
+                        _importer.DefaultTextureFormat = TextureFormat.ASTC_4x4;
+                    }                    
+                }
+                else if (Application.platform == RuntimePlatform.Android)
+                {
+                    if (SystemInfo.SupportsTextureFormat(TextureFormat.ETC2_RGBA1))
+                    {
+                        _importer.DefaultTextureFormat = TextureFormat.ETC2_RGBA1;
+                    }
+                    if (SystemInfo.SupportsTextureFormat(TextureFormat.ETC2_RGBA8Crunched))
+                    {
+                        _importer.DefaultTextureFormat = TextureFormat.ETC2_RGBA8Crunched;
+                    }
+                    if (SystemInfo.SupportsTextureFormat(TextureFormat.ASTC_4x4))
+                    {
+                        _importer.DefaultTextureFormat = TextureFormat.ASTC_4x4;
+                    }
+                }
+                else
+                {
+                    //_importer.DefaultTextureFormat = TextureFormat.DXT1;
+                    _importer.DefaultTextureFormat = TextureFormat.RGBA32;
+                }
 
                 _importer.Collider = GLTFSceneImporter.ColliderType.Mesh;
                 _importer.SceneParent = _parent.transform;
@@ -333,7 +377,6 @@ namespace Sturfee.DigitalTwin.Tiles
                 MyLogger.LogException(ex);
                 throw;
             }
-
         }
 
         private void OnFinishAsync(string filePath, GameObject result, ExceptionDispatchInfo info)
@@ -461,7 +504,7 @@ namespace Sturfee.DigitalTwin.Tiles
                     if (tasks.IsCompleted)
                     {
                         var paths = tasks.Result;
-                        filePaths = paths.Where(x => !string.IsNullOrEmpty(x)).ToList();
+                        filePaths.AddRange(paths.Where(x => !string.IsNullOrEmpty(x)).ToList());
                         MyLogger.Log($"DtTileLoader :: Done downloading tiles ({paths.Length})");
 
                         progress?.Invoke(1, 0);
