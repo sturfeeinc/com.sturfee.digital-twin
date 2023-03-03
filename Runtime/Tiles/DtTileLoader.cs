@@ -65,6 +65,7 @@ namespace Sturfee.DigitalTwin.Tiles
             $"{FeatureLayer.TrainTrack}",
             $"{FeatureLayer.Road}",
             $"{FeatureLayer.Sidewalk}",
+            $"{FeatureLayer.RoadMarking}",
             //$"{FeatureLayer.Building}",
             //$"{FeatureLayer.Terrain}"
         };
@@ -498,6 +499,18 @@ namespace Sturfee.DigitalTwin.Tiles
             else
             {
                 LayerUtils.SetLayerRecursive(result, LayerMask.NameToLayer($"{XrLayers.DigitalTwin}"));
+            }
+
+            if (Path.GetFileNameWithoutExtension(filename) == $"{FeatureLayer.RoadMarking}")
+            {
+                foreach (var mr in result.transform.GetComponentsInChildren<MeshRenderer>())
+                {
+                    mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                }
+                foreach (var c in result.transform.GetComponentsInChildren<Collider>())
+                {
+                    Destroy(c);
+                }
             }
         }
 
