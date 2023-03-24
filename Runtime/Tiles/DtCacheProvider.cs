@@ -8,6 +8,8 @@ public class CachedDtTile
     public string Geohash;
     public FeatureLayer Layer;
     public string Path;
+    public string Format;
+    public bool HasLods;
     public byte[] Data;
 }
 
@@ -38,6 +40,13 @@ public class DtCacheProvider : ICacheProvider<CachedDtTile>
         if (!Directory.Exists(_cacheDir)) { return null; }
 
         var filepath = Path.Combine(_cacheDir, $"{key}.glb");
+        var fileType = "GLB";
+
+        if (!File.Exists(filepath))
+        {
+            filepath = Path.Combine(_cacheDir, $"{key}.gltf");
+            fileType = "GLTF";
+        }
 
         byte[] fileData;
         if (File.Exists(filepath))
@@ -53,10 +62,15 @@ public class DtCacheProvider : ICacheProvider<CachedDtTile>
 
             //fileData = File.ReadAllBytes(filepath);
 
+            var hasLods = fileType == "GLTF" ? Directory.Exists(Path.Combine(_cacheDir, $"{key}", "lods")) : false;
+            Debug.Log($"DtCacheProvider :: Loading data for {key}.{fileType} => {filepath} | LODs={hasLods}");
+
             var result = new CachedDtTile
             {
                 Geohash = key,
                 Path = filepath,
+                Format = fileType,
+                HasLods = hasLods
                 //Data = fileData
             };
 
