@@ -42,10 +42,17 @@ namespace Sturfee.DigitalTwin.Tiles
     }
 
     [Serializable]
+    public class TileInfo
+    {
+        public string Path;
+        public bool HasLods;
+    }
+
+    [Serializable]
     public class CacheInfo
     {
         public GeoLocation Location;
-        public List<string> CachedTilesPath;
+        public List<TileInfo> CachedTilesPath;
         public List<String> NonCachedGeohashes;
     }
 
@@ -72,6 +79,11 @@ namespace Sturfee.DigitalTwin.Tiles
             $"{FeatureLayer.Sidewalk}",
             $"{FeatureLayer.Terrain}"
         };
+
+        public int CurrentDetailLevel = 0;
+        private int _lastDetailLevel = -1;
+
+        public bool GenerateMipMapsForTextures = true;
 
         private GameObject _parent;
 
@@ -149,11 +161,11 @@ namespace Sturfee.DigitalTwin.Tiles
         /// <returns></returns>
         public async Task<List<string>> DownloadTilesAt(double latitude, double longitude, double radius, DtTileLoadEvent progress = null, DtTileLoadError onError = null)
         {
-            MyLogger.Log($"DtTileLoader :: Downloading tiles at {latitude}, {longitude}");
+            MyLogger.Log($"DtTileLoader :: Downloading tiles at {latitude}, {longitude}, radius={radius}");
 
             var filePaths = new List<string>();
             var geoHash = GeoHash.Encode(latitude, longitude, _geohashLength);
-            var cacheInfo = GetCacheInfo(latitude, longitude);
+            var cacheInfo = GetCacheInfo(latitude, longitude, radius);
 
             var nonCachedGeoHashes = cacheInfo.NonCachedGeohashes;
             if (!nonCachedGeoHashes.Any())
@@ -231,13 +243,13 @@ namespace Sturfee.DigitalTwin.Tiles
 
             var cacheInfo = GetCacheInfo(location.Coordinates.Lat, location.Coordinates.Lon, radius);
             var cachedTiles = cacheInfo.CachedTilesPath;
-            var filePaths = new List<string>(cachedTiles);
+            var tilesToLoad = new List<TileInfo>(cachedTiles);
 
             // check if anything needed to be downloaded
             var nonCachedGeohashes = cacheInfo.NonCachedGeohashes;
             if (nonCachedGeohashes.Any())
             {
-                var downloadedFilePaths = await DownloadTilesAt(
+                var downloadedTiles = await DownloadTilesAt(
                     tileGeohash,
                     radius,
                     (downloadProgress, error) => 
@@ -251,18 +263,57 @@ namespace Sturfee.DigitalTwin.Tiles
                     }
                 );
 
-                filePaths.AddRange(downloadedFilePaths);
-            }
+                //tilesToLoad.AddRange(downloadedTiles);
+
+                // set up the cached tiles again
+                cacheInfo = GetCacheInfo(location.Coordinates.Lat, location.Coordinates.Lon, radius);
+                cachedTiles = cacheInfo.CachedTilesPath;
+                tilesToLoad = new List<TileInfo>(cachedTiles);
+            }            
 
             // Import
             float currentCount = 0;
             int errorCount = 0;
-            float totalCount = filePaths.Count;
-            foreach (var filepath in filePaths)
+            float totalCount = tilesToLoad.Count;
+            foreach (var tileToLoad in tilesToLoad)
             {
                 try
                 {
-                    await ImportTileLayer(filepath, (go, err) =>
+                    // set LOD textures -> overwrite referenced texture files using lods folder
+                    if (tileToLoad.HasLods && CurrentDetailLevel != _lastDetailLevel)
+                    {
+                        var basePath = Path.Combine(Path.GetDirectoryName(tileToLoad.Path), Path.GetFileNameWithoutExtension(tileToLoad.Path));
+                        if (!Directory.Exists(basePath))
+                        {
+                            MyLogger.LogError($"Directory does not exist: {basePath}");
+                            continue;
+                        }
+                        var lodPath = Path.Combine(basePath, "lods", $"LOD{CurrentDetailLevel}");
+                        if (!Directory.Exists(lodPath))
+                        {
+                            MyLogger.LogError($"Directory does not exist: {lodPath}");
+                            continue;
+                        }
+
+                        MyLogger.Log($"DtTileLoader :: Loading LOD textures for level {CurrentDetailLevel}...");                        
+                        var lodTextures = Directory.GetFiles(lodPath);
+                        foreach (var texture in lodTextures)
+                        {
+                            var texturePath = Path.Combine(basePath, texture);
+                            if (File.Exists(texturePath))
+                            {
+                                var copyToFile = Path.Combine(basePath, Path.GetFileName(texturePath));
+                                MyLogger.Log($"Found LOD texture: {texture}\n COPY: {texturePath} => {copyToFile}");                                
+                                File.Copy(texturePath, copyToFile, true);
+                            }
+                            else
+                            {
+                                MyLogger.LogError($"Texture LOD does not exist: {texturePath}");
+                            }
+                        }
+                    }
+
+                    await ImportTileLayer(tileToLoad.Path, (go, err) =>
                     {
                         if (go != null)
                         {
@@ -284,7 +335,7 @@ namespace Sturfee.DigitalTwin.Tiles
                 }
             }
 
-            MyLogger.Log($"DtTileLoader :: DONE! Loaded ({totalCount}) DT Tiles for hash {tileGeohash} OR loc={location.Coordinates.Lat},{location.Coordinates.Lon}\nERROR COUNT = {errorCount}");
+            MyLogger.Log($"DtTileLoader :: DONE! Loaded ({currentCount}) DT Tiles for hash {tileGeohash} OR loc={location.Coordinates.Lat},{location.Coordinates.Lon}\nERROR COUNT = {errorCount}");
 
             // Arrange tiles in scene
             foreach (var loadedTile in _loadedTiles)
@@ -313,7 +364,51 @@ namespace Sturfee.DigitalTwin.Tiles
 
             try
             {
+                if (!File.Exists(filePath))
+                {
+                    MyLogger.LogError($"{filePath} DOES NOT EXIST!");
+                    return;
+                }
+
                 var _importer = new GLTFSceneImporter(filePath, _importOptions);
+
+                // optimization techniques
+                _importer.GenerateMipMapsForTextures = GenerateMipMapsForTextures;
+                //_importer.KeepCPUCopyOfTexture = false;
+
+                // _importer.DefaultTextureFormat = TextureFormat.RGBA32;
+
+                // if (Application.platform == RuntimePlatform.IPhonePlayer)
+                // {
+                //     if (SystemInfo.SupportsTextureFormat(TextureFormat.ETC2_RGBA8Crunched))
+                //     {
+                //         _importer.DefaultTextureFormat = TextureFormat.ETC2_RGBA8Crunched;
+                //     }
+                //     if (SystemInfo.SupportsTextureFormat(TextureFormat.ASTC_4x4))
+                //     {
+                //         _importer.DefaultTextureFormat = TextureFormat.ASTC_4x4;
+                //     }                    
+                // }
+                // else if (Application.platform == RuntimePlatform.Android)
+                // {
+                //     if (SystemInfo.SupportsTextureFormat(TextureFormat.ETC2_RGBA1))
+                //     {
+                //         _importer.DefaultTextureFormat = TextureFormat.ETC2_RGBA1;
+                //     }
+                //     if (SystemInfo.SupportsTextureFormat(TextureFormat.ETC2_RGBA8Crunched))
+                //     {
+                //         _importer.DefaultTextureFormat = TextureFormat.ETC2_RGBA8Crunched;
+                //     }
+                //     if (SystemInfo.SupportsTextureFormat(TextureFormat.ASTC_4x4))
+                //     {
+                //         _importer.DefaultTextureFormat = TextureFormat.ASTC_4x4;
+                //     }
+                // }
+                // else
+                // {
+                //     //_importer.DefaultTextureFormat = TextureFormat.DXT1;
+                //     _importer.DefaultTextureFormat = TextureFormat.RGBA32;
+                // }
 
                 _importer.Collider = GLTFSceneImporter.ColliderType.Mesh;
                 _importer.SceneParent = _parent.transform;
@@ -334,7 +429,6 @@ namespace Sturfee.DigitalTwin.Tiles
                 MyLogger.LogException(ex);
                 throw;
             }
-
         }
 
         private void OnFinishAsync(string filePath, GameObject result, ExceptionDispatchInfo info)
@@ -430,7 +524,7 @@ namespace Sturfee.DigitalTwin.Tiles
 
             // check local cache
             var dtTileCache = IOC.Resolve<ICacheProvider<CachedDtTile>>();
-            var cachedTiles = new List<string>();
+            var cachedTiles = new List<TileInfo>();
             foreach (var geohash in geohashes)
             {
                 foreach (var layer in Enum.GetValues(typeof(FeatureLayer)))
@@ -438,7 +532,11 @@ namespace Sturfee.DigitalTwin.Tiles
                     var cachedTile = dtTileCache.GetFromCache(Path.Combine(geohash, $"{layer}"));
                     if (cachedTile != null)
                     {
-                        cachedTiles.Add(cachedTile.Path);
+                        cachedTiles.Add(new TileInfo
+                        {
+                            Path = cachedTile.Path,
+                            HasLods = cachedTile.HasLods
+                        });
                     }
                 }
 
@@ -474,7 +572,7 @@ namespace Sturfee.DigitalTwin.Tiles
                     if (tasks.IsCompleted)
                     {
                         var paths = tasks.Result;
-                        filePaths = paths.Where(x => !string.IsNullOrEmpty(x)).ToList();
+                        filePaths.AddRange(paths.Where(x => !string.IsNullOrEmpty(x)).ToList());
                         MyLogger.Log($"DtTileLoader :: Done downloading tiles ({paths.Length})");
 
                         progress?.Invoke(1, 0);
