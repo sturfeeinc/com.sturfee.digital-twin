@@ -17,6 +17,8 @@ namespace Sturfee.DigitalTwin.Tiles
         private ProviderStatus _providerStatus;
 
         private GameObject _tiles;
+        
+        [SerializeField] private float _radius = 300;
 
         public override async void OnRegister()
         {
@@ -30,7 +32,7 @@ namespace Sturfee.DigitalTwin.Tiles
                 // Debug.Log($"VR Location: Latitude: {location.Latitude}, Longitude: {location.Longitude}");
                 try
                 {                    
-                    _tiles = await GetTiles(location);
+                    _tiles = await GetTiles(location, _radius);
                 }
                 catch(Exception ex)
                 {
@@ -70,7 +72,7 @@ namespace Sturfee.DigitalTwin.Tiles
         public override async Task<GameObject> GetTiles(GeoLocation location, float radius = 0, CancellationToken cancellationToken = default)
         {
             _providerStatus = ProviderStatus.Initializing;
-            var tiles = await DtTileLoader.Instance.LoadTilesAt(location.Latitude, location.Longitude);
+            var tiles = await DtTileLoader.Instance.LoadTilesAt(location.Latitude, location.Longitude, radius);
             tiles.transform.parent = transform;
             _providerStatus = ProviderStatus.Ready;
             return tiles ;
