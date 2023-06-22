@@ -2,20 +2,18 @@
     "name": "SturfeeVPS.DigitalTwin.Editor",
     "rootNamespace": "",
     "references": [
-        "GUID:81efed15009bc3848a0ef91022405536",
-        "GUID:f3342bdf77841184fa43ed46b62683ee",
-        "GUID:18d18f811ba286c49814567a3cfba688",
-        "GUID:34326c4360e2d4760b399f1589bcd4dc",
-        "GUID:3c92269389b449f41a89c80de0b0b31b",
-        "GUID:f3b2a9d99d5a9ce42be5e21753cd2383",
-        "GUID:7cf5bec77405b5c4cbf4b2c6bc166b20",
-        "GUID:f50b621c179b609419b395845029c660",
-        "GUID:23b96c7da1af5469385c131e0b7249e6",
-        "GUID:2cbab47f8915e7b41af88def2e9184f0",
-        "GUID:b73836c7c71bf844b8366030ac3db968",
-        "GUID:fdf6252c6937c954aa47ccec00ccb252",
-        "GUID:42d88dee643b4584796f97cc4b5e803c",
-        "GUID:f8f22eb1973cffd41ab4cca4247b7627"
+        "SturfeeVPS.DigitalTwin",
+        "Sturfee.DigitalTwin.Logger",
+        "UnityGLTFScripts",
+        "Sturfee-XRCS-Models",
+        "Sturfee.DigitalTwin.Tiles",
+        "Sturfee-XRCS",
+        "Sturfee-XRCS-Config",
+        "SturfeeVPS.SDK",
+        "SturfeeVPS.Core",
+        "Sturfee.DigitalTwin.Config",
+        "SturfeeVPS.SDK.Editor",
+        "Sturfee.DigitalTwin.Auth.Editor"
     ],
     "includePlatforms": [
         "Editor"
