@@ -9,7 +9,7 @@
         "Sturfee-XRCS-Config",
         "Sturfee-XRCS-Models",
         "Sturfee.DigitalTwin.Logger",
-        "UnityGLTFScripts",
+        "glTFast",
         "Unity.TextMeshPro",
         "GUID:ee5b030f9e5fd654099b5e6ec08e246a",
         "Sturfee.DigitalTwin.Config",

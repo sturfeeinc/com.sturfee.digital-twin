@@ -17,8 +17,10 @@ using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
-using UnityGLTF;
-using UnityGLTF.Loader;
+//using UnityGLTF;
+//using UnityGLTF.Loader;
+using GLTFast;
+
 using DebugWatch = System.Diagnostics.Stopwatch;
 
 namespace Sturfee.DigitalTwin.Tiles
@@ -354,11 +356,11 @@ namespace Sturfee.DigitalTwin.Tiles
 
         private async Task ImportTileLayer(string filePath, Action<GameObject, ExceptionDispatchInfo> onComplete = null)
         {
-            var _importOptions = new ImportOptions
-            {
-                DataLoader = new FileLoader(Path.GetDirectoryName(filePath)),
-                AsyncCoroutineHelper = gameObject.AddOrGetComponent<AsyncCoroutineHelper>(),
-            };
+            //var _importOptions = new ImportOptions
+            //{
+            //    DataLoader = new FileLoader(Path.GetDirectoryName(filePath)),
+            //    AsyncCoroutineHelper = gameObject.AddOrGetComponent<AsyncCoroutineHelper>(),
+            //};
 
             MyLogger.Log($"DtTileLoader :: Khronos :: Loading file = {filePath}");
 
@@ -370,58 +372,79 @@ namespace Sturfee.DigitalTwin.Tiles
                     return;
                 }
 
-                var _importer = new GLTFSceneImporter(filePath, _importOptions);
+                //var _importer = new GLTFSceneImporter(filePath, _importOptions);
 
-                // optimization techniques
-                _importer.GenerateMipMapsForTextures = GenerateMipMapsForTextures;
-                //_importer.KeepCPUCopyOfTexture = false;
+                //// optimization techniques
+                //_importer.GenerateMipMapsForTextures = GenerateMipMapsForTextures;
+                ////_importer.KeepCPUCopyOfTexture = false;
 
-                // _importer.DefaultTextureFormat = TextureFormat.RGBA32;
+                //// _importer.DefaultTextureFormat = TextureFormat.RGBA32;
 
-                // if (Application.platform == RuntimePlatform.IPhonePlayer)
-                // {
-                //     if (SystemInfo.SupportsTextureFormat(TextureFormat.ETC2_RGBA8Crunched))
-                //     {
-                //         _importer.DefaultTextureFormat = TextureFormat.ETC2_RGBA8Crunched;
-                //     }
-                //     if (SystemInfo.SupportsTextureFormat(TextureFormat.ASTC_4x4))
-                //     {
-                //         _importer.DefaultTextureFormat = TextureFormat.ASTC_4x4;
-                //     }                    
-                // }
-                // else if (Application.platform == RuntimePlatform.Android)
-                // {
-                //     if (SystemInfo.SupportsTextureFormat(TextureFormat.ETC2_RGBA1))
-                //     {
-                //         _importer.DefaultTextureFormat = TextureFormat.ETC2_RGBA1;
-                //     }
-                //     if (SystemInfo.SupportsTextureFormat(TextureFormat.ETC2_RGBA8Crunched))
-                //     {
-                //         _importer.DefaultTextureFormat = TextureFormat.ETC2_RGBA8Crunched;
-                //     }
-                //     if (SystemInfo.SupportsTextureFormat(TextureFormat.ASTC_4x4))
-                //     {
-                //         _importer.DefaultTextureFormat = TextureFormat.ASTC_4x4;
-                //     }
-                // }
-                // else
-                // {
-                //     //_importer.DefaultTextureFormat = TextureFormat.DXT1;
-                //     _importer.DefaultTextureFormat = TextureFormat.RGBA32;
-                // }
+                //// if (Application.platform == RuntimePlatform.IPhonePlayer)
+                //// {
+                ////     if (SystemInfo.SupportsTextureFormat(TextureFormat.ETC2_RGBA8Crunched))
+                ////     {
+                ////         _importer.DefaultTextureFormat = TextureFormat.ETC2_RGBA8Crunched;
+                ////     }
+                ////     if (SystemInfo.SupportsTextureFormat(TextureFormat.ASTC_4x4))
+                ////     {
+                ////         _importer.DefaultTextureFormat = TextureFormat.ASTC_4x4;
+                ////     }                    
+                //// }
+                //// else if (Application.platform == RuntimePlatform.Android)
+                //// {
+                ////     if (SystemInfo.SupportsTextureFormat(TextureFormat.ETC2_RGBA1))
+                ////     {
+                ////         _importer.DefaultTextureFormat = TextureFormat.ETC2_RGBA1;
+                ////     }
+                ////     if (SystemInfo.SupportsTextureFormat(TextureFormat.ETC2_RGBA8Crunched))
+                ////     {
+                ////         _importer.DefaultTextureFormat = TextureFormat.ETC2_RGBA8Crunched;
+                ////     }
+                ////     if (SystemInfo.SupportsTextureFormat(TextureFormat.ASTC_4x4))
+                ////     {
+                ////         _importer.DefaultTextureFormat = TextureFormat.ASTC_4x4;
+                ////     }
+                //// }
+                //// else
+                //// {
+                ////     //_importer.DefaultTextureFormat = TextureFormat.DXT1;
+                ////     _importer.DefaultTextureFormat = TextureFormat.RGBA32;
+                //// }
 
-                _importer.Collider = GLTFSceneImporter.ColliderType.Mesh;
-                _importer.SceneParent = _parent.transform;
+                //_importer.Collider = GLTFSceneImporter.ColliderType.Mesh;
+                //_importer.SceneParent = _parent.transform;
 
-                await _importer.LoadSceneAsync(
-                    -1,
-                    true, 
-                    (go, err) => 
-                    {
-                        onComplete?.Invoke(go, err);
-                        OnFinishAsync(filePath, go, err);
-                    }
-                );
+                //await _importer.LoadSceneAsync(
+                //    -1,
+                //    true, 
+                //    (go, err) => 
+                //    {
+                //        onComplete?.Invoke(go, err);
+                //        OnFinishAsync(filePath, go, err);
+                //    }
+                //);
+
+
+                byte[] glbData = File.ReadAllBytes(filePath);
+                var gltf = new GltfImport();
+                bool success = await gltf.LoadGltfBinary(
+                    glbData,
+                    // The URI of the original data is important for resolving relative URIs within the glTF
+                    new Uri(filePath)
+                    );
+                if (success)
+                {
+                    var go = new GameObject($"GLTF_SCENE");
+                    go.transform.SetParent(_parent.transform);
+                    success = await gltf.InstantiateMainSceneAsync(go.transform);
+                    OnFinishAsync(filePath, go, null);
+                }
+                else
+                {
+                    MyLogger.Log($"DtTileLoader :: ERROR loading GLTF file");
+                }
+
             }
             catch (Exception ex)
             {
