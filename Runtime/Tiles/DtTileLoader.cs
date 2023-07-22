@@ -438,6 +438,11 @@ namespace Sturfee.DigitalTwin.Tiles
                     var go = new GameObject($"GLTF_SCENE");
                     go.transform.SetParent(_parent.transform);
                     success = await gltf.InstantiateMainSceneAsync(go.transform);
+                    foreach (MeshFilter mf in go.GetComponentsInChildren<MeshFilter>())
+                    {
+                        mf.gameObject.AddComponent<MeshCollider>();
+                    }
+
                     OnFinishAsync(filePath, go, null);
                 }
                 else
