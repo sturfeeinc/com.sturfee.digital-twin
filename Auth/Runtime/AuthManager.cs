@@ -9,7 +9,12 @@ using System.Net;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace Sturfee.XRCS
+using System.Text;
+using Amazon;
+using Amazon.CognitoIdentityProvider;
+using Amazon.Extensions.CognitoAuthentication;
+
+namespace Sturfee.Auth
 {
     public class NewSessionRequest
     {
@@ -22,7 +27,7 @@ namespace Sturfee.XRCS
         public string sturfee_sid { get; set; }
         public string error_message { get; set; }
     }
-    
+
     public class AuthManager : SimpleSingleton<AuthManager>
     {
         public string SessionId => _sessionId;
@@ -34,10 +39,15 @@ namespace Sturfee.XRCS
         public XrcsUserData CurrentUser => _currentUser;
         private XrcsUserData _currentUser = null;
 
+        public AuthenticationProviderConfig AuthProvider => _authProvider;
+        private AuthenticationProviderConfig _authProvider = null;
+
         // Player Prefs
         private string _authSessionIdKey = "sessionid";
         private string _authTokenKey = "authtoken";
         private string _playerInfoKey = "PlayerInfo";
+
+        public static string LocalPath => Path.Combine("Assets", "Resources", "Sturfee", "Auth");
 
         private void Awake()
         {
@@ -61,6 +71,33 @@ namespace Sturfee.XRCS
         }
 
         public async Task<bool> StartLoginFlow(string username, string password, string code)
+        {
+            // get the provider from settings; default to Sturfee login
+            var authProviderSettings = Resources.Load<AuthenticationProviderConfig>($"Sturfee/Auth/AuthProvider.asset");
+            if (authProviderSettings != null)
+            {
+                Debug.Log($"[AuthManager] :: Auth Provder Settings Found!");
+                _authProvider = authProviderSettings;
+                if (authProviderSettings.Provider == AuthenticationProvider.Sturfee)
+                {
+                    var success = await StartLoginFlowSturfee(username, password, code);
+                    return success;
+                }
+                else
+                {
+                    var success = await StartLoginFlowCognito(username, password, authProviderSettings);
+                    return success;
+                }
+            }
+            else
+            {
+                Debug.Log($"[AuthManager] :: WARNING: Auth Provder Settings NOT Found!");
+                var success = await StartLoginFlowSturfee(username, password, code);
+                return success;
+            }
+        }
+
+        public async Task<bool> StartLoginFlowSturfee(string username, string password, string code)
         {
             // use code OR user/password to start session
 
@@ -148,7 +185,7 @@ namespace Sturfee.XRCS
 
                         if (userResponse != null)
                         {
-                            _currentUser = userResponse;               
+                            _currentUser = userResponse;
                         }
                     }
                 }
@@ -161,6 +198,70 @@ namespace Sturfee.XRCS
             }
 
             return true;
+        }
+
+
+        public async Task<bool> StartLoginFlowCognito(string username, string password, AuthenticationProviderConfig config)
+        {
+            try
+            {
+                Debug.Log("[AwsCognitoAuthManager] :: Authenticating user...");
+                AmazonCognitoIdentityProviderClient provider = new AmazonCognitoIdentityProviderClient(RegionEndpoint.GetBySystemName($"{config.Region}")); // Amazon.RegionEndpoint.APNortheast1);
+
+                CognitoUserPool userPool = new CognitoUserPool(config.PoolId, config.ClientId, provider);
+                CognitoUser user = new CognitoUser(username, config.ClientId, userPool, provider);
+
+                Debug.Log("[AwsCognitoAuthManager] :: Waiting for Authentication response...");
+                AuthFlowResponse authResponse = await user.StartWithSrpAuthAsync(new InitiateSrpAuthRequest
+                {
+                    Password = password
+                }).ConfigureAwait(false);
+
+
+                if (authResponse.AuthenticationResult != null)
+                {
+                    Debug.Log("[AwsCognitoAuthManager] :: User successfully authenticated.");
+                    var idToken = authResponse.AuthenticationResult.IdToken;
+                    var accessToken = authResponse.AuthenticationResult.AccessToken;
+
+                    if (config.Token == CognitoAuthTokenType.IdToken)
+                    {
+                        SetAuthToken(idToken);
+                    }
+                    else
+                    {
+                        SetAuthToken(accessToken);
+                    }
+
+                    var userDataJson = ReadJwtTokenContent(user.SessionTokens.IdToken);
+                    Debug.Log($"userDataJson = {userDataJson}");
+                    //_userData = JsonConvert.DeserializeObject<Dictionary<string, object>>(userDataJson);
+                    //Debug.Log($"User Data = {JsonConvert.SerializeObject(_userData)}");
+
+                    // //Debug.Log("Done!");
+                    // //Debug.Log(user.SessionTokens.IdToken);
+                    Debug.Log("[AwsCognitoAuthManager] :: Success");
+
+                    // await GetShops();
+
+                    return true;
+                }
+                else
+                {
+                    Debug.Log("Error in authentication process.");
+                }
+
+                // return user;
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[AwsCognitoAuthManager] :: ERROR");
+                Debug.Log(ex);
+                throw;
+            }
+
+            return false;
         }
 
         public void LoginAsGuest()
@@ -205,5 +306,33 @@ namespace Sturfee.XRCS
             AuthHelper.SessionId = string.Empty;
             AuthHelper.Token = string.Empty;
         }
-    } 
+
+        protected string ReadJwtTokenContent(string token)
+        {
+            var content = token.Split('.')[1];
+            Debug.Log(content);
+
+            var jsonPayload = Encoding.UTF8.GetString(
+                this.Decode(content));
+            Debug.Log(jsonPayload);
+
+            return jsonPayload; // JsonSerializer.Deserialize<JwtTokenContent>(jsonPayload);
+        }
+
+        private byte[] Decode(string input)
+        {
+            var output = input;
+            output = output.Replace('-', '+'); // 62nd char of encoding
+            output = output.Replace('_', '/'); // 63rd char of encoding
+            switch (output.Length % 4) // Pad with trailing '='s
+            {
+                case 0: break; // No pad chars in this case
+                case 2: output += "=="; break; // Two pad chars
+                case 3: output += "="; break; // One pad char
+                default: throw new System.ArgumentOutOfRangeException("input", "Illegal base64url string!");
+            }
+            var converted = Convert.FromBase64String(output); // Standard base64 decoder
+            return converted;
+        }
+    }
 }

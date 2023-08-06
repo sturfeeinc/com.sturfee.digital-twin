@@ -2,7 +2,7 @@ using Sturfee.XRCS.Config;
 using System;
 using UnityEditor;
 
-namespace Sturfee.XRCS.Editor
+namespace Sturfee.DigitalTwin.Editor
 {
     public class DigitalTwinEditor
     {
