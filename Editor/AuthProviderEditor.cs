@@ -18,6 +18,8 @@ namespace Sturfee.Auth.Editor
         {
             serializedObject.Update();
 
+            index = serializedObject.FindProperty("Provider").enumValueIndex;
+
             GUILayout.Label("Choose Authentication Provider", EditorStyles.boldLabel);
             index = EditorGUILayout.Popup(index, options);
 
