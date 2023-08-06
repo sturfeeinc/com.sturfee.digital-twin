@@ -2,6 +2,7 @@ using Sturfee.DigitalTwin.CMS;
 using Sturfee.DigitalTwin.Spaces;
 using Sturfee.DigitalTwin.Tiles;
 using Sturfee.XRCS;
+using Sturfee.Auth;
 using SturfeeVPS.SDK;
 using System;
 using System.Collections;
