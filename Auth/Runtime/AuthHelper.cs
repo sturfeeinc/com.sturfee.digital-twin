@@ -3,7 +3,7 @@ using System.Net;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace Sturfee.XRCS
+namespace Sturfee.Auth
 
 {
     public static class AuthHelper
