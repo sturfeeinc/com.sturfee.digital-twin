@@ -4,7 +4,6 @@
     "references": [
         "Sturfee.DigitalTwin.Auth",
         "SturfeeVPS.Core",
-        "SturfeeVPS.DigitalTwin.Editor",
         "Sturfee.Auth.Shared"
     ],
     "includePlatforms": [
