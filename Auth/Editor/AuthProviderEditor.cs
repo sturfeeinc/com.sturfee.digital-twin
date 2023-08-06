@@ -1,5 +1,5 @@
 using Sturfee.DigitalTwin.Auth.Editor;
-using SturfeeVPS.SDK.Editor;
+using Sturfee.Auth.Editor;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
