@@ -13,7 +13,8 @@
         "SturfeeVPS.Core",
         "Sturfee.DigitalTwin.Config",
         "SturfeeVPS.SDK.Editor",
-        "Sturfee.DigitalTwin.Auth.Editor"
+        "Sturfee.DigitalTwin.Auth.Editor",
+        "Sturfee.Auth.Shared"
     ],
     "includePlatforms": [
         "Editor"
