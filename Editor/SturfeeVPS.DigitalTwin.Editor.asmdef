@@ -4,7 +4,7 @@
     "references": [
         "SturfeeVPS.DigitalTwin",
         "Sturfee.DigitalTwin.Logger",
-        "UnityGLTFScripts",
+        "glTFast",
         "Sturfee-XRCS-Models",
         "Sturfee.DigitalTwin.Tiles",
         "Sturfee-XRCS",
