@@ -42,7 +42,10 @@ namespace Sturfee.DigitalTwin.Auth.Editor
         [MenuItem("Sturfee/DigitalTwin/AppKeys/IOS")]
         public static void ShowAppKeyConfig_IOS()
         {
-            ShowAppKeyConfig(AppKeySupportedPlatforms.IOS);    [MenuItem("Sturfee/DigitalTwin/AppKeys/Desktop")]
+            ShowAppKeyConfig(AppKeySupportedPlatforms.IOS);
+        }
+
+        [MenuItem("Sturfee/DigitalTwin/AppKeys/Desktop")]
         public static void ShowAppKeyConfig_Desktop()
         {
             ShowAppKeyConfig(AppKeySupportedPlatforms.Desktop);
