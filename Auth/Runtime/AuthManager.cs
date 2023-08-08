@@ -42,6 +42,11 @@ namespace Sturfee.Auth
         public AuthenticationProviderConfig AuthProvider => _authProvider;
         private AuthenticationProviderConfig _authProvider = null;
 
+        public AuthenticationProvider AuthProviderType => _authProviderType;
+        private AuthenticationProvider _authProviderType = AuthenticationProvider.Sturfee;
+
+        private string _idToken = string.Empty;
+
         // Player Prefs
         private string _authSessionIdKey = "sessionid";
         private string _authTokenKey = "authtoken";
@@ -55,6 +60,7 @@ namespace Sturfee.Auth
             _token = PlayerPrefs.GetString(_authTokenKey);
 
             MyLogger.Log($"Found Auth: \ntoken={_token}\nsessionid={_sessionId}");
+            GetSettings();
         }
 
         public void SetAuthSessionId(string sessionId)
@@ -72,26 +78,15 @@ namespace Sturfee.Auth
 
         public async Task<bool> StartLoginFlow(string username, string password, string code)
         {
-            // get the provider from settings; default to Sturfee login
-            var authProviderSettings = Resources.Load<AuthenticationProviderConfig>($"Sturfee/Auth/AuthProvider.asset");
-            if (authProviderSettings != null)
+            GetSettings();
+
+            if (_authProvider && _authProvider.Provider != AuthenticationProvider.Sturfee)
             {
-                Debug.Log($"[AuthManager] :: Auth Provder Settings Found!");
-                _authProvider = authProviderSettings;
-                if (authProviderSettings.Provider == AuthenticationProvider.Sturfee)
-                {
-                    var success = await StartLoginFlowSturfee(username, password, code);
-                    return success;
-                }
-                else
-                {
-                    var success = await StartLoginFlowCognito(username, password, authProviderSettings);
-                    return success;
-                }
+                var success = await StartLoginFlowCognito(username, password, _authProvider);
+                return success;
             }
             else
             {
-                Debug.Log($"[AuthManager] :: WARNING: Auth Provder Settings NOT Found!");
                 var success = await StartLoginFlowSturfee(username, password, code);
                 return success;
             }
@@ -100,7 +95,7 @@ namespace Sturfee.Auth
         public async Task<bool> StartLoginFlowSturfee(string username, string password, string code)
         {
             // use code OR user/password to start session
-
+            Debug.Log("[SturfeeAuthManager] :: Authenticating user...");
             MyLogger.Log($"Starting new AUTH SESSION => {XrConstants.AUTH_API}/startNewSession");
 
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create($"{XrConstants.AUTH_API}/startNewSession");
@@ -157,6 +152,20 @@ namespace Sturfee.Auth
         public async Task<bool> TryLogin()
         {
             // try to get the user's info from the server
+            GetSettings();
+
+            if (_authProvider.Provider != AuthenticationProvider.Sturfee)
+            {
+                var userDataJson = ReadJwtTokenContent(_idToken); // user.SessionTokens.IdToken);
+                Debug.Log($"userDataJson = {userDataJson}");
+
+                _currentUser = new XrcsUserData
+                {
+
+                };
+
+                return true;
+            }
 
             HttpWebRequest xrcsAuthRequest = (HttpWebRequest)WebRequest.Create($"{XrConstants.XRCS_API}/accounts/auth/login");
             xrcsAuthRequest.Method = "POST";
@@ -221,20 +230,20 @@ namespace Sturfee.Auth
                 if (authResponse.AuthenticationResult != null)
                 {
                     Debug.Log("[AwsCognitoAuthManager] :: User successfully authenticated.");
-                    var idToken = authResponse.AuthenticationResult.IdToken;
+                    _idToken = authResponse.AuthenticationResult.IdToken;
                     var accessToken = authResponse.AuthenticationResult.AccessToken;
 
                     if (config.Token == CognitoAuthTokenType.IdToken)
                     {
-                        SetAuthToken(idToken);
+                        SetAuthToken(_idToken);
                     }
                     else
                     {
                         SetAuthToken(accessToken);
                     }
 
-                    var userDataJson = ReadJwtTokenContent(user.SessionTokens.IdToken);
-                    Debug.Log($"userDataJson = {userDataJson}");
+                    //var userDataJson = ReadJwtTokenContent(_idToken); // user.SessionTokens.IdToken);
+                    //Debug.Log($"userDataJson = {userDataJson}");
                     //_userData = JsonConvert.DeserializeObject<Dictionary<string, object>>(userDataJson);
                     //Debug.Log($"User Data = {JsonConvert.SerializeObject(_userData)}");
 
@@ -266,6 +275,7 @@ namespace Sturfee.Auth
 
         public void LoginAsGuest()
         {
+            GetSettings();
             GetGuestId();
         }
 
@@ -305,6 +315,18 @@ namespace Sturfee.Auth
 
             AuthHelper.SessionId = string.Empty;
             AuthHelper.Token = string.Empty;
+        }
+
+        protected void GetSettings()
+        {
+            // get the provider from settings; default to Sturfee login
+            var authProviderSettings = Resources.Load<AuthenticationProviderConfig>($"Sturfee/Auth/AuthProvider");
+            if (authProviderSettings != null)
+            {
+                Debug.Log($"[AuthManager] :: Auth Provder Settings Found!");
+                _authProvider = authProviderSettings;
+                _authProviderType = _authProvider.Provider;
+            }
         }
 
         protected string ReadJwtTokenContent(string token)

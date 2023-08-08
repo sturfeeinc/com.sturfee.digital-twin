@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using System.IO;
+using Sturfee.XRCS.Config;
+using System;
 
 
 namespace Sturfee.Auth.Editor
@@ -52,9 +54,15 @@ namespace Sturfee.Auth.Editor
 
             GUILayout.Label("Authentication Provider", EditorStyles.boldLabel);
             EditorGUILayout.Space();
-            index = EditorGUILayout.Popup(index, options);
-            if (GUILayout.Button("Save Authentication Settings"))
+            index = EditorGUILayout.Popup(index, options, GUILayout.Width(200), GUILayout.Height(25));
+            if (GUILayout.Button("Save Authentication Settings", GUILayout.Width(200), GUILayout.Height(25)))
                 InstantiatePrimitive();
+        }
+
+        protected override void OnConfigTab()
+        {
+            base.OnConfigTab();
+            HandleDigitalTwinLayers();
         }
 
 
@@ -78,6 +86,17 @@ namespace Sturfee.Auth.Editor
                     Debug.LogError("Unrecognized Option");
                     break;
             }
+        }
+
+        protected virtual void HandleDigitalTwinLayers()
+        {
+            GUILayout.Label("Digital Twin Settings", EditorStyles.boldLabel);
+            EditorGUILayout.Space();
+            if (GUILayout.Button("Install DT Layers", GUILayout.Width(150)))
+            {
+                CreateDigitalTwinLayers();
+            }
+            EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
         }
 
         private static void ShowAuthProviderConfig(string provider)
@@ -125,6 +144,41 @@ namespace Sturfee.Auth.Editor
 
             Debug.Log($"AuthenticationProviderConfig {JsonUtility.ToJson(config)} saved ");
 
+        }
+
+        protected static void CreateDigitalTwinLayers()
+        {
+            Debug.Log($"Installing DT layers..");
+            SerializedObject tagManager = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+            SerializedProperty layers = tagManager.FindProperty("layers");
+
+            Type type = typeof(XrLayers);
+            foreach (var layer in type.GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public))
+            {
+                var layerValue = layer.GetValue(null).ToString();
+                bool existLayer = false;
+                for (int i = 8; i < layers.arraySize; i++)
+                {
+                    SerializedProperty layerSp = layers.GetArrayElementAtIndex(i);
+                    if (layerSp.stringValue == layerValue)
+                    {
+                        existLayer = true;
+                        break;
+                    }
+                }
+                for (int j = 8; j < layers.arraySize; j++)
+                {
+                    SerializedProperty layerSP = layers.GetArrayElementAtIndex(j);
+                    if (layerSP.stringValue == "" && !existLayer)
+                    {
+                        layerSP.stringValue = layerValue;
+                        tagManager.ApplyModifiedProperties();
+
+                        break;
+                    }
+                }
+            }
+            Debug.Log($"Done!");
         }
     }
 

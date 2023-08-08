@@ -6,7 +6,7 @@ namespace Sturfee.DigitalTwin.Editor
 {
     public class DigitalTwinEditor
     {
-        [MenuItem("Sturfee/DigitalTwin/Install Layers")]
+        // [MenuItem("Sturfee/DigitalTwin/Install Layers")]
 
         public static void CreateDigitalTwinLayers()
         {
