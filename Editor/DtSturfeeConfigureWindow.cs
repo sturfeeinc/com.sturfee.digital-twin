@@ -12,8 +12,15 @@ using System;
 
 namespace Sturfee.Auth.Editor
 {
+    [InitializeOnLoad]
     public class DtSturfeeConfigureWindow : SturfeeConfigurationWindow
     {
+
+        static DtSturfeeConfigureWindow()
+        {
+            // Debug.Log("DtSturfeeConfigureWindow :: SETUP!");
+            ShowAuthProviderConfig("Sturfee", true);
+        }
 
         [MenuItem("Sturfee/Configure", false, 0)]
         public static new void ShowWindow()
@@ -79,7 +86,7 @@ namespace Sturfee.Auth.Editor
                     ShowAuthProviderConfig("Sturfee");
                     break;
                 case 1:
-                    // create cognito settings
+                    // create cognito settings 
                     ShowAuthProviderConfig("AWS Cognito");
                     break;
                 default:
@@ -99,9 +106,12 @@ namespace Sturfee.Auth.Editor
             EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
         }
 
-        private static void ShowAuthProviderConfig(string provider)
+        private static void ShowAuthProviderConfig(string provider, bool skipShow = false)
         {
-            EditorUtility.FocusProjectWindow();
+            if (!skipShow)
+            {
+                EditorUtility.FocusProjectWindow();
+            }
 
             UnityEngine.Object obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(Path.Combine(LocalPath, $"AuthProvider.asset"));
 
@@ -113,7 +123,10 @@ namespace Sturfee.Auth.Editor
                 obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(Path.Combine(LocalPath, $"AuthProvider.asset"));
             }
 
-            Selection.activeObject = obj;
+            if (!skipShow)
+            {
+                Selection.activeObject = obj;
+            }
         }
         private static AuthenticationProviderConfig CreateAuthProviderObject(string provider)
         {
