@@ -6,7 +6,8 @@
         "Sturfee-XRCS-Config",
         "Sturfee.DigitalTwin.Logger",
         "SturfeeVPS.Core",
-        "SturfeeVPS.SDK"
+        "SturfeeVPS.SDK",
+        "Sturfee.Auth.Shared"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

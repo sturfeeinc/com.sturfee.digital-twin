@@ -9,7 +9,7 @@ using System.Net;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace Sturfee.XRCS
+namespace Sturfee.Auth
 {
     public interface IAuthProvider
     {
@@ -131,7 +131,7 @@ namespace Sturfee.XRCS
             {
                 string json = JsonConvert.SerializeObject(
                     new LoginResponse // re-use the LoginResponse schema (same for this auth request)
-                {
+                    {
                         Token = sturfeeToken
                     }
                 );

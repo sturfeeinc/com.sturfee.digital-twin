@@ -3,7 +3,8 @@
     "rootNamespace": "",
     "references": [
         "Sturfee.DigitalTwin.Auth",
-        "SturfeeVPS.Core"
+        "SturfeeVPS.Core",
+        "Sturfee.Auth.Shared"
     ],
     "includePlatforms": [
         "Editor"
