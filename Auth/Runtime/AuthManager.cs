@@ -16,6 +16,23 @@ using Amazon.Extensions.CognitoAuthentication;
 
 namespace Sturfee.Auth
 {
+    public class CognitoAuthContext
+    {
+        public AuthenticationProvider Provider;
+        public string Region;
+        public string PoolId;
+        public string ClientId;
+        public CognitoAuthTokenType Token;
+        public bool IsBearer;
+
+        public string Username;
+        public string IdToken;
+        public string AccessToken;
+        public string RefreshToken;
+        public DateTime IssuedTime;
+        public DateTime ExpirationTime;
+    }
+
     public class NewSessionRequest
     {
         public string authenticationCode { get; set; }
@@ -51,6 +68,7 @@ namespace Sturfee.Auth
         private string _authSessionIdKey = "sessionid";
         private string _authTokenKey = "authtoken";
         private string _playerInfoKey = "PlayerInfo";
+        private string _authContextKey = "authContext";
 
         public static string LocalPath => Path.Combine("Assets", "Resources", "Sturfee", "Auth");
 
@@ -67,13 +85,15 @@ namespace Sturfee.Auth
         {
             MyLogger.Log($"Saving Session ID = {sessionId}");
             _sessionId = sessionId;
-            PlayerPrefs.SetString(_authSessionIdKey, sessionId);
+            // PlayerPrefs.SetString(_authSessionIdKey, sessionId);
+            Dispatcher.RunOnMainThread(() => PlayerPrefs.SetString(_authSessionIdKey, sessionId));
         }
 
         public void SetAuthToken(string token)
         {
             _token = token;
-            PlayerPrefs.SetString(_authTokenKey, token);
+            // PlayerPrefs.SetString(_authTokenKey, token);
+            Dispatcher.RunOnMainThread(() => PlayerPrefs.SetString(_authTokenKey, token));
         }
 
         public async Task<bool> StartLoginFlow(string username, string password, string code)
@@ -156,12 +176,20 @@ namespace Sturfee.Auth
 
             if (_authProvider.Provider != AuthenticationProvider.Sturfee)
             {
+                _idToken = _token;
+                if (string.IsNullOrEmpty(_idToken)) { return false; }
+
+                await RefreshCognitoLogin();
+
                 var userDataJson = ReadJwtTokenContent(_idToken); // user.SessionTokens.IdToken);
                 Debug.Log($"userDataJson = {userDataJson}");
+                var userData = JsonConvert.DeserializeObject<Dictionary<string, object>>(userDataJson);                
 
                 _currentUser = new XrcsUserData
                 {
-
+                    Id = Guid.Parse($"{userData["sub"]}"),
+                    Name = $"{userData["email"]}", //userData["email"],
+                    Email = $"{userData["email"]}"
                 };
 
                 return true;
@@ -171,7 +199,7 @@ namespace Sturfee.Auth
             xrcsAuthRequest.Method = "POST";
             xrcsAuthRequest.ContentType = "application/json; charset=utf-8";
             xrcsAuthRequest.ContentLength = 0;
-            AuthHelper.AddXrcsTokenAuthHeader(xrcsAuthRequest);
+            AuthHelper.AddAuthHeaders(xrcsAuthRequest);
 
             MyLogger.Log($"tokenRequest = {XrConstants.XRCS_API}/accounts/auth/login");
             try
@@ -253,6 +281,29 @@ namespace Sturfee.Auth
 
                     // await GetShops();
 
+                    var authContext = new CognitoAuthContext
+                    {
+                        Provider = config.Provider,
+                        Region = config.Region,
+                        PoolId = config.PoolId,
+                        ClientId = config.ClientId,
+                        Token = config.Token,
+                        IsBearer = config.IsBearer,
+
+                        Username = username,
+                        IdToken = authResponse.AuthenticationResult.IdToken,
+                        AccessToken = authResponse.AuthenticationResult.AccessToken,
+                        RefreshToken = authResponse.AuthenticationResult.RefreshToken,
+                        IssuedTime = user.SessionTokens.IssuedTime,
+                        ExpirationTime = user.SessionTokens.ExpirationTime,
+                    };
+
+                    var authContextJson = JsonConvert.SerializeObject(authContext);
+                    Debug.Log($"Login Context: {authContextJson}");
+
+                    /*PlayerPrefs.SetString(_authContextKey, authContextJson)*/;
+                    Dispatcher.RunOnMainThread(() => PlayerPrefs.SetString(_authContextKey, authContextJson));
+
                     return true;
                 }
                 else
@@ -300,10 +351,12 @@ namespace Sturfee.Auth
 
         public void Logout()
         {
+            Debug.Log($"LOGOUT!!!");
             MyLogger.Log($"LOGOUT!!!");
 
             _token = string.Empty;
             _sessionId = string.Empty;
+            _idToken = string.Empty;
 
             PlayerPrefs.SetString(_authSessionIdKey, "");
             PlayerPrefs.SetString(_authTokenKey, "");
@@ -311,11 +364,82 @@ namespace Sturfee.Auth
             PlayerPrefs.DeleteKey(_authSessionIdKey);
             PlayerPrefs.DeleteKey(_authTokenKey);
             PlayerPrefs.DeleteKey(_playerInfoKey);
+            PlayerPrefs.DeleteKey(_authContextKey);
             _currentUser = null;
 
             AuthHelper.SessionId = string.Empty;
             AuthHelper.Token = string.Empty;
         }
+
+        private async Task<bool> RefreshCognitoLogin()
+        {
+            // https://github.com/aws/aws-sdk-net-extensions-cognito/issues/24            
+
+
+            var authContextJson = PlayerPrefs.GetString(_authContextKey);
+            var authContext = JsonConvert.DeserializeObject<CognitoAuthContext>(authContextJson);
+
+            // check if token is expired
+            if (DateTime.Now < authContext.ExpirationTime) { return true; }
+
+            if (authContext == null)
+            {
+                return false;
+            }
+
+            Debug.Log($"[AwsCognitoAuthManager] :: Refreshing authentication... \n{authContextJson}");
+            AmazonCognitoIdentityProviderClient provider = new AmazonCognitoIdentityProviderClient(RegionEndpoint.GetBySystemName($"{authContext.Region}")); // Amazon.RegionEndpoint.APNortheast1);
+
+            CognitoUserPool userPool = new CognitoUserPool(authContext.PoolId, authContext.ClientId, provider);
+            CognitoUser user = new CognitoUser(authContext.Username, authContext.ClientId, userPool, provider);
+            user.SessionTokens = new CognitoUserSession(
+                authContext.IdToken,
+                authContext.AccessToken,
+                authContext.RefreshToken,
+                authContext.IssuedTime, //user.SessionTokens.IssuedTime,
+                DateTime.Now.AddHours(1)
+            );
+            var authResponse = await user.StartWithRefreshTokenAuthAsync(new InitiateRefreshTokenAuthRequest
+            {
+                AuthFlowType = AuthFlowType.REFRESH_TOKEN
+            }).ConfigureAwait(false);
+
+            if (authResponse.AuthenticationResult != null)
+            {
+                Debug.Log("[AwsCognitoAuthManager] :: User successfully authenticated (refresh).");
+                _idToken = authResponse.AuthenticationResult.IdToken;
+                var accessToken = authResponse.AuthenticationResult.AccessToken;
+
+                if (authContext.Token == CognitoAuthTokenType.IdToken)
+                {
+                    SetAuthToken(_idToken);
+                }
+                else
+                {
+                    SetAuthToken(accessToken);
+                }
+                Debug.Log("[AwsCognitoAuthManager] :: Refresh Success");
+
+                authContext.IdToken = authResponse.AuthenticationResult.IdToken;
+                authContext.AccessToken = authResponse.AuthenticationResult.AccessToken;
+                authContext.RefreshToken = authResponse.AuthenticationResult.RefreshToken;
+                authContext.IssuedTime = user.SessionTokens.IssuedTime;
+                authContext.ExpirationTime = user.SessionTokens.ExpirationTime;
+
+                authContextJson = JsonConvert.SerializeObject(authContext);
+                Debug.Log($"Login Context: {authContextJson}");
+                Dispatcher.RunOnMainThread(() => PlayerPrefs.SetString(_authContextKey, authContextJson));
+
+                return true;
+            }
+            else
+            {
+                Debug.Log("Error in authentication refresh process.");
+            }
+
+            return false;
+        }
+
 
         protected void GetSettings()
         {
@@ -357,4 +481,5 @@ namespace Sturfee.Auth
             return converted;
         }
     }
+
 }

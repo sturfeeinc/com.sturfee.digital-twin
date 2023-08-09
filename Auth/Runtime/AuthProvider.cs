@@ -131,7 +131,7 @@ namespace Sturfee.Auth
             {
                 string json = JsonConvert.SerializeObject(
                     new LoginResponse // re-use the LoginResponse schema (same for this auth request)
-                {
+                    {
                         Token = sturfeeToken
                     }
                 );
