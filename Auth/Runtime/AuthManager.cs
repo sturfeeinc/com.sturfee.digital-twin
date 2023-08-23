@@ -189,7 +189,8 @@ namespace Sturfee.Auth
                 {
                     Id = Guid.Parse($"{userData["sub"]}"),
                     Name = $"{userData["email"]}", //userData["email"],
-                    Email = $"{userData["email"]}"
+                    Email = $"{userData["email"]}",
+                    RefId = $"{userData["custom:company_id"]}",
                 };
 
                 return true;
