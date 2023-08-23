@@ -243,7 +243,7 @@ namespace Sturfee.Auth
             try
             {
                 Debug.Log("[AwsCognitoAuthManager] :: Authenticating user...");
-                AmazonCognitoIdentityProviderClient provider = new AmazonCognitoIdentityProviderClient(RegionEndpoint.GetBySystemName($"{config.Region}")); // Amazon.RegionEndpoint.APNortheast1);
+                AmazonCognitoIdentityProviderClient provider = new AmazonCognitoIdentityProviderClient(new Amazon.Runtime.AnonymousAWSCredentials(), RegionEndpoint.GetBySystemName($"{config.Region}")); // Amazon.RegionEndpoint.APNortheast1);
 
                 CognitoUserPool userPool = new CognitoUserPool(config.PoolId, config.ClientId, provider);
                 CognitoUser user = new CognitoUser(username, config.ClientId, userPool, provider);
