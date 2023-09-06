@@ -389,7 +389,7 @@ namespace Sturfee.Auth
             }
 
             Debug.Log($"[AwsCognitoAuthManager] :: Refreshing authentication... \n{authContextJson}");
-            AmazonCognitoIdentityProviderClient provider = new AmazonCognitoIdentityProviderClient(RegionEndpoint.GetBySystemName($"{authContext.Region}")); // Amazon.RegionEndpoint.APNortheast1);
+            AmazonCognitoIdentityProviderClient provider = new AmazonCognitoIdentityProviderClient(new Amazon.Runtime.AnonymousAWSCredentials(), RegionEndpoint.GetBySystemName($"{authContext.Region}")); // Amazon.RegionEndpoint.APNortheast1);
 
             CognitoUserPool userPool = new CognitoUserPool(authContext.PoolId, authContext.ClientId, provider);
             CognitoUser user = new CognitoUser(authContext.Username, authContext.ClientId, userPool, provider);
