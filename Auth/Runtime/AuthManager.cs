@@ -69,6 +69,7 @@ namespace Sturfee.Auth
         private string _authTokenKey = "authtoken";
         private string _playerInfoKey = "PlayerInfo";
         private string _authContextKey = "authContext";
+        private string _refreshTokenExpiresKey = "refreshtokenexpires";
 
         public static string LocalPath => Path.Combine("Assets", "Resources", "Sturfee", "Auth");
 
@@ -304,6 +305,7 @@ namespace Sturfee.Auth
 
                     /*PlayerPrefs.SetString(_authContextKey, authContextJson)*/;
                     Dispatcher.RunOnMainThread(() => PlayerPrefs.SetString(_authContextKey, authContextJson));
+                    Dispatcher.RunOnMainThread(() => PlayerPrefs.SetString(_refreshTokenExpiresKey, $"{DateTime.Now.AddDays(25)}"));
 
                     return true;
                 }
@@ -379,12 +381,19 @@ namespace Sturfee.Auth
 
             var authContextJson = PlayerPrefs.GetString(_authContextKey);
             var authContext = JsonConvert.DeserializeObject<CognitoAuthContext>(authContextJson);
+            var refreshExpires = PlayerPrefs.GetString(_refreshTokenExpiresKey);
+            var refreshExipration = string.IsNullOrEmpty(refreshExpires) ? DateTime.Now.AddDays(10) : DateTime.Parse(refreshExpires);
 
             // check if token is expired
-            if (DateTime.Now < authContext.ExpirationTime) { return true; }
+            if (DateTime.Now < authContext.ExpirationTime)
+            {
+                Debug.Log($"Token not expired ({authContext.ExpirationTime})");
+                return true;
+            }
 
             if (authContext == null)
             {
+                Debug.Log($"authContext is NULL");
                 return false;
             }
 
@@ -398,7 +407,7 @@ namespace Sturfee.Auth
                 authContext.AccessToken,
                 authContext.RefreshToken,
                 authContext.IssuedTime, //user.SessionTokens.IssuedTime,
-                DateTime.Now.AddHours(1)
+                refreshExipration // DateTime.Now.AddDays(10) // DateTime.Now.AddHours(1)
             );
             var authResponse = await user.StartWithRefreshTokenAuthAsync(new InitiateRefreshTokenAuthRequest
             {
@@ -430,6 +439,7 @@ namespace Sturfee.Auth
                 authContextJson = JsonConvert.SerializeObject(authContext);
                 Debug.Log($"Login Context: {authContextJson}");
                 Dispatcher.RunOnMainThread(() => PlayerPrefs.SetString(_authContextKey, authContextJson));
+                Dispatcher.RunOnMainThread(() => PlayerPrefs.SetString(_refreshTokenExpiresKey, $"{DateTime.Now.AddDays(25)}"));
 
                 return true;
             }
